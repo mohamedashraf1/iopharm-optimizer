@@ -31,4 +31,9 @@ public class OptimizerController {
     void testORv2(){
         ioTools.getOptimizedSolution();
     }
+
+    @GetMapping("/optimal-solution-or/v3")
+    void testORv3(){
+        ioTools.getOptimizedSolutionWithConstraint();
+    }
 }
