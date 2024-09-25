@@ -22,8 +22,13 @@ public class OptimizerController {
         return new ResponseEntity<>(optimizerService.getOptimizedSolution(), HttpStatus.OK);
     }
 
-    @GetMapping("/optimal-solution-or")
+    @GetMapping("/optimal-solution-or/v1")
     void testOR(){
         ioTools.solve();
+    }
+
+    @GetMapping("/optimal-solution-or/v2")
+    void testORv2(){
+        ioTools.getOptimizedSolution();
     }
 }
