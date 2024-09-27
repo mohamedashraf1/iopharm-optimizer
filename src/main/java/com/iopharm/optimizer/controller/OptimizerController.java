@@ -3,6 +3,7 @@ package com.iopharm.optimizer.controller;
 import com.iopharm.optimizer.model.Solution;
 import com.iopharm.optimizer.service.IOTools;
 import com.iopharm.optimizer.service.OptimizerService;
+import com.iopharm.optimizer.service.OptimizerService1;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,12 +15,19 @@ public class OptimizerController {
     @Autowired
     OptimizerService optimizerService;
     @Autowired
+    OptimizerService1 optimizerService1;
+    @Autowired
     IOTools ioTools;
 
 
-    @GetMapping("/optimal-solution")
+    @GetMapping("/optimal-solution/v1")
     ResponseEntity<Solution> test(){
         return new ResponseEntity<>(optimizerService.getOptimizedSolution(), HttpStatus.OK);
+    }
+
+    @GetMapping("/optimal-solution/v2")
+    ResponseEntity<?> testV2(){
+        return new ResponseEntity<>(optimizerService1.getOptimizedSolution(), HttpStatus.OK);
     }
 
     @GetMapping("/optimal-solution-or/v1")
