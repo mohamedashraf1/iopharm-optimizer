@@ -245,8 +245,8 @@ public class OptimizerService1 {
         // add the last warehouse products to the first
         firstWarehouseProductIds.addAll(assignment.get(notSatisfiedWarehouses.get(notSatisfiedWarehouses.size()-1).getId()));
 
-
-        finalAssignment.put(notSatisfiedWarehouses.get(0).getId(), firstWarehouseProductIds);
+        // overwrite the first notSatisfiedWarehouse with the new list
+        assignment.put(notSatisfiedWarehouses.get(0).getId(), firstWarehouseProductIds);
 
         // remove the last warehouse id from the notSatisfied as we will not order anything from it now
         notSatisfiedWarehousesIds.remove(notSatisfiedWarehouses.get(notSatisfiedWarehouses.size()-1).getId());
@@ -254,8 +254,10 @@ public class OptimizerService1 {
         // check if the first warehouse is now satisfied and remove it
         Warehouse1 firstWarehouse = getWarehouseById(notSatisfiedWarehouses.get(0).getId(), warehouses);
         double firstWarehouseOrderPrice
-                = getWarehouseOrderPrice(finalAssignment, firstWarehouse);
-        if(firstWarehouseOrderPrice >= firstWarehouse.getMinOrderPrice())
+                = getWarehouseOrderPrice(assignment, firstWarehouse);
+        if(firstWarehouseOrderPrice >= firstWarehouse.getMinOrderPrice()){
+            finalAssignment.put(notSatisfiedWarehouses.get(0).getId(), firstWarehouseProductIds);
             notSatisfiedWarehousesIds.remove(notSatisfiedWarehouses.get(0).getId());
+        }
     }
 }
