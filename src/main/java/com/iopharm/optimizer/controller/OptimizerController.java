@@ -1,14 +1,21 @@
 package com.iopharm.optimizer.controller;
 
+import com.iopharm.optimizer.dtos.ProductDTO;
+import com.iopharm.optimizer.dtos.WarehouseDTO;
+import com.iopharm.optimizer.dtos.WarehouseProductDTO;
 import com.iopharm.optimizer.model.Solution;
 import com.iopharm.optimizer.service.IOTools;
 import com.iopharm.optimizer.service.OptimizerService;
 import com.iopharm.optimizer.service.OptimizerService1;
+import com.iopharm.optimizer.service.OrToolsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @RestController
 public class OptimizerController {
@@ -19,6 +26,8 @@ public class OptimizerController {
     @Autowired
     IOTools ioTools;
 
+    @Autowired
+    OrToolsService orTools;
 
     @GetMapping("/optimal-solution/v1")
     ResponseEntity<Solution> test(){
@@ -43,5 +52,61 @@ public class OptimizerController {
     @GetMapping("/optimal-solution-or/v3")
     void testORv3(){
         ioTools.getOptimizedSolutionWithConstraint();
+    }
+
+    @GetMapping("/optimal-solution-or/v4")
+    void testORv4() {
+        orTools.solve2();
+    }
+
+    @GetMapping("/optimal-solution-or/v5")
+    void testORv5() {
+        List<WarehouseDTO> warehouses = new ArrayList<>();
+        List<ProductDTO> products = new ArrayList<>();
+
+        // Create Products with quantities
+        ProductDTO productA = new ProductDTO(1L, "Product A", 80L); // Quantity is now 80
+        ProductDTO productB = new ProductDTO(2L, "Product B", 70L); // Quantity is now 70
+        products.add(productA);
+        products.add(productB);
+
+        // Create Warehouses
+        WarehouseDTO warehouse1 = new WarehouseDTO(1L, "Warehouse 1", 1000.0, new ArrayList<>());
+        warehouse1.getAvailableProducts().add(new WarehouseProductDTO(1L, 10.0, 100L));
+        warehouse1.getAvailableProducts().add(new WarehouseProductDTO(2L, 20.0, 150L));
+        warehouses.add(warehouse1);
+
+        WarehouseDTO warehouse2 = new WarehouseDTO(2L, "Warehouse 2", 1500.0, new ArrayList<>());
+        warehouse2.getAvailableProducts().add(new WarehouseProductDTO(1L, 15.0, 200L));
+        warehouse2.getAvailableProducts().add(new WarehouseProductDTO(2L, 25.0, 100L));
+        warehouses.add(warehouse2);
+
+        // Solve the optimization problem
+        orTools.solveOptimized(warehouses, products);
+    }
+    @GetMapping("/optimal-solution-or/v6")
+    void testORv6() {
+        List<WarehouseDTO> warehouses = new ArrayList<>();
+        List<ProductDTO> products = new ArrayList<>();
+
+        // Create Products with quantities
+        ProductDTO productA = new ProductDTO(1L, "Product A", 80L); // Quantity is now 80
+        ProductDTO productB = new ProductDTO(2L, "Product B", 70L); // Quantity is now 70
+        products.add(productA);
+        products.add(productB);
+
+        // Create Warehouses
+        WarehouseDTO warehouse1 = new WarehouseDTO(1L, "Warehouse 1", 1000.0, new ArrayList<>());
+        warehouse1.getAvailableProducts().add(new WarehouseProductDTO(1L, 10.0, 100L));
+        warehouse1.getAvailableProducts().add(new WarehouseProductDTO(2L, 20.0, 150L));
+        warehouses.add(warehouse1);
+
+        WarehouseDTO warehouse2 = new WarehouseDTO(2L, "Warehouse 2", 1500.0, new ArrayList<>());
+        warehouse2.getAvailableProducts().add(new WarehouseProductDTO(1L, 15.0, 200L));
+        warehouse2.getAvailableProducts().add(new WarehouseProductDTO(2L, 25.0, 100L));
+        warehouses.add(warehouse2);
+
+        // Solve the optimization problem
+        orTools.solveOptimized(warehouses, products);
     }
 }
