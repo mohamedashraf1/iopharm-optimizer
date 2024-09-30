@@ -109,4 +109,10 @@ public class OptimizerController {
         // Solve the optimization problem
         orTools.solveOptimized(warehouses, products);
     }
+
+    @GetMapping("/optimal-solution-or/v7")
+    void testORv7() {
+        orTools.solve3();
+    }
+
 }

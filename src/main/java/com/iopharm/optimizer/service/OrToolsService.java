@@ -5,6 +5,7 @@ import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPSolver.ResultStatus;
 import com.google.ortools.linearsolver.MPVariable;
+import com.google.ortools.sat.*;
 import com.iopharm.optimizer.dtos.ProductDTO;
 import com.iopharm.optimizer.dtos.WarehouseDTO;
 import com.iopharm.optimizer.dtos.WarehouseProductDTO;
@@ -122,7 +123,7 @@ public class OrToolsService {
         // Storage capacity for each product in each warehouse
         int[][] storageCapacity = {
                 {70, 150}, // Warehouse 1 capacities for Product A and B
-                {200, 100}  // Warehouse 2 capacities for Product A and B
+                {1, 100}  // Warehouse 2 capacities for Product A and B
         };
 
         // Prices for products in each warehouse
@@ -217,7 +218,119 @@ public class OrToolsService {
         System.out.println("Problem solved in " + solver.iterations() + " iterations");
     }
 
+    public void solve3() {
+        Loader.loadNativeLibraries();
 
+        // Input data
+        int numWarehouses = 2;
+        int numProducts = 2;
+        String[] warehouses = {"Warehouse 1", "Warehouse 2"};
+        String[] products = {"Product A", "Product B"};
+
+        // Storage capacity for each product in each warehouse
+        int[][] storageCapacity = {
+                {70, 150}, // Warehouse 1 capacities for Product A and B
+                {1, 100}  // Warehouse 2 capacities for Product A and B
+        };
+
+        // Prices for products in each warehouse
+        double[][] prices = {
+                {10, 20}, // Warehouse 1 prices for Product A and B
+                {15, 25}  // Warehouse 2 prices for Product A and B
+        };
+
+        // Demand for each product
+        int[] demand = {80, 70};
+        double[] minPrice = {1000, 1500};
+
+        // Create the solver
+        MPSolver solver = MPSolver.createSolver("CBC_MIXED_INTEGER_PROGRAMMING");
+        if (solver == null) {
+            System.out.println("Could not create solver CBC_MIXED_INTEGER_PROGRAMMING");
+            return;
+        }
+
+        // Decision variables: number of units sourced from each warehouse
+        MPVariable[][] x = new MPVariable[numWarehouses][numProducts];
+        for (int i = 0; i < numWarehouses; i++) {
+            for (int j = 0; j < numProducts; j++) {
+                x[i][j] = solver.makeNumVar(0, storageCapacity[i][j], "x_" + i + "_" + j);
+            }
+        }
+
+        // Additional variables for unmet demand (slack variables)
+        MPVariable[] unmetDemand = new MPVariable[numProducts];
+        for (int j = 0; j < numProducts; j++) {
+            unmetDemand[j] = solver.makeNumVar(0, demand[j], "unmetDemand_" + j);
+        }
+
+        // Objective function: minimize total cost + large penalty for unmet demand
+        MPObjective objective = solver.objective();
+
+        // Minimize the total cost
+        for (int i = 0; i < numWarehouses; i++) {
+            for (int j = 0; j < numProducts; j++) {
+                objective.setCoefficient(x[i][j], prices[i][j]);  // Add cost of sourcing from each warehouse
+            }
+        }
+
+        // Penalty for unmet demand (i.e., maximize quantity supplied)
+        // Use a large penalty to force the solver to fulfill as much demand as possible
+        // 1000 * unMetDemandP2 + 1000 * unMetDemandP2 is added to the objective to be minimized
+        double penaltyForUnmetDemand = 1000;  // Increase this penalty to ensure unmet demand is discouraged
+        for (int j = 0; j < numProducts; j++) {
+            objective.setCoefficient(unmetDemand[j], penaltyForUnmetDemand);  // Penalize unmet demand heavily
+        }
+
+        // now objective function is 10x11 + 20x12 + 15x21 + 25x22 + 1000 * unMetDemandP2 + 1000 * unMetDemandP2
+        objective.setMinimization();  // Set to minimize the total objective
+
+        // Demand constraints: total supplied + unmet demand = total demand
+        for (int j = 0; j < numProducts; j++) {
+            MPConstraint demandConstraint = solver.makeConstraint(demand[j], demand[j], "demand_" + j);
+            for (int i = 0; i < numWarehouses; i++) {
+                demandConstraint.setCoefficient(x[i][j], 1);  // Sum of all supplies should be part of the demand
+            }
+            demandConstraint.setCoefficient(unmetDemand[j], 1);  // Add unmet demand as part of the equation
+        }
+//
+//        // Minimum price constraints: ensure the total cost of products in each warehouse meets the minimum price
+//        // x11*p11 + x12*p2 >= 1000
+//        // P2 >= 1000
+//        for (int i = 0; i < numWarehouses; i++) {
+//            MPConstraint minPriceConstraint = solver.makeConstraint(minPrice[i], Double.POSITIVE_INFINITY, "minPrice_" + i);
+//            for (int j = 0; j < numProducts; j++) {
+//                minPriceConstraint.setCoefficient(x[i][j], prices[i][j]);
+//            }
+//        }
+
+        // Solve the problem
+        ResultStatus resultStatus = solver.solve();
+
+        // Check and print the solution
+        if (resultStatus == ResultStatus.OPTIMAL) {
+            System.out.println("Optimal solution found:");
+            for (int i = 0; i < numWarehouses; i++) {
+                for (int j = 0; j < numProducts; j++) {
+                    if (x[i][j].solutionValue() > 0) {
+                        System.out.printf("%s from %s: %.0f units%n", products[j], warehouses[i], x[i][j].solutionValue());
+                    }
+                }
+            }
+            double sumOfUnmetQty = 0;
+            for (int j = 0; j < numProducts; j++) {
+                sumOfUnmetQty += unmetDemand[j].solutionValue();
+                System.out.printf("Unmet demand for %s: %.0f units%n", products[j], unmetDemand[j].solutionValue());
+            }
+            System.out.printf("Total cost: %.2f%n", solver.objective().value() - penaltyForUnmetDemand*sumOfUnmetQty);
+        } else {
+            System.out.println("The problem does not have an optimal solution.");
+        }
+
+        System.out.println("Advanced usage:");
+        System.out.println("Problem solved in " + solver.wallTime() + " milliseconds");
+        System.out.println("Problem solved in " + solver.iterations() + " iterations");
+    }
 
 //    public void solve2() {
 //        Loader.loadNativeLibraries();
