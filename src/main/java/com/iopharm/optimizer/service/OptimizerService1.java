@@ -113,7 +113,7 @@ public class OptimizerService1 {
         return order;
     }
 
-    public Map<Integer, List<Integer>> getOptimizedSolution(){
+    public Map<Integer, List<Product>> getOptimizedSolution(){
         List<Warehouse1> warehouses = getWarehouses();
         List<Product> order = getOrder();
         setWarehousesById(warehouses);
@@ -121,7 +121,8 @@ public class OptimizerService1 {
 
         // warehouseId, List<ProductId>
         Map<Integer, List<Integer>> assignment = new HashMap<>();
-        Map<Integer, List<Integer>> finalAssignment = new HashMap<>();
+        // warehouseId, List<product>
+        Map<Integer, List<Product>> solution = new HashMap<>();
 
         // List<warehouseId>
         Set<Integer> notSatisfiedWarehousesIds = new HashSet<>();
@@ -143,7 +144,11 @@ public class OptimizerService1 {
             warehousesOrderPrice.put(warehouse.getId(), warehouseOrderPrice);
             if(warehouseOrderPrice >= warehouse.getMinOrderPrice()){
                 // finished
-                finalAssignment.put(warehouse.getId(), assignment.get(warehouse.getId()));
+                List<Product> warehouseProducts = new ArrayList<>();
+                for (Integer productId : assignment.get(warehouse.getId())){
+                    warehouseProducts.add(productsById.get(productId));
+                }
+                solution.put(warehouseId, warehouseProducts);
             }else {
                 // need to reassign
                 notSatisfiedWarehousesIds.add(warehouse.getId());
@@ -152,7 +157,7 @@ public class OptimizerService1 {
 
 
         if(notSatisfiedWarehousesIds.isEmpty()){ // all warehouses satisfy the criteria
-            return finalAssignment;
+            return solution;
         }
 
         System.out.println("not satisfied warehouses Ids before: " + notSatisfiedWarehousesIds);
@@ -163,17 +168,17 @@ public class OptimizerService1 {
             System.out.println("reassign");
 //            reassignProducts(finalAssignment, assignment, notSatisfiedWarehousesIds, warehouses, warehousesOrderPrice);
             notReachableProductIds =
-                    reassignProductsWithNextCheapest(finalAssignment, assignment, notSatisfiedWarehousesIds, warehousesOrderPrice);
+                    reassignProductsWithNextCheapest(solution, assignment, notSatisfiedWarehousesIds, warehousesOrderPrice);
         }
 
+        System.out.println("solution: " + solution);
         System.out.println("Not reachable Products Ids: " + notReachableProductIds);
-        System.out.println("final assignment (warehouseId, List<product>): " + finalAssignment);
         System.out.println("not satisfied warehouses");
         for(Integer warehouseId : notSatisfiedWarehousesIds){
             System.out.println("warehouse: " + warehouseId + " with products: " + assignment.get(warehouseId));
         }
 
-        return finalAssignment;
+        return solution;
     }
 
     List<Warehouse1> getAvailableWarehouses(Product product, List<Warehouse1> warehouses){
@@ -270,7 +275,8 @@ public class OptimizerService1 {
         }
     }
 
-    Set<Integer> reassignProductsWithNextCheapest(Map<Integer, List<Integer>> finalAssignment, Map<Integer, List<Integer>> assignment, Set<Integer> notSatisfiedWarehousesIds
+    Set<Integer> reassignProductsWithNextCheapest(Map<Integer, List<Product>> solution,
+                                                  Map<Integer, List<Integer>> assignment, Set<Integer> notSatisfiedWarehousesIds
             , Map<Integer, Double> warehousesOrderPrice){
         List<Warehouse1> notSatisfiedWarehouses = new ArrayList<>();
 
@@ -311,7 +317,11 @@ public class OptimizerService1 {
         for(Warehouse1 warehouse : notSatisfiedWarehouses){
             double orderPrice = getWarehouseOrderPrice(assignment, warehouse);
             if(orderPrice >= warehouse.getMinOrderPrice()){
-                finalAssignment.put(warehouse.getId(), assignment.get(warehouse.getId()));
+                List<Product> warehouseProducts = new ArrayList<>();
+                for (Integer productId : assignment.get(warehouse.getId())){
+                    warehouseProducts.add(productsById.get(productId));
+                }
+                solution.put(warehouse.getId(), warehouseProducts);
                 notSatisfiedWarehousesIds.remove(warehouse.getId());
             }
         }
