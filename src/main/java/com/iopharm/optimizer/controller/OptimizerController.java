@@ -4,6 +4,7 @@ import com.iopharm.optimizer.dtos.ProductDTO;
 import com.iopharm.optimizer.dtos.WarehouseDTO;
 import com.iopharm.optimizer.dtos.WarehouseProductDTO;
 import com.iopharm.optimizer.model.Solution;
+import com.iopharm.optimizer.service.CbcSolver;
 import com.iopharm.optimizer.service.IOTools;
 import com.iopharm.optimizer.service.OptimizerService;
 import com.iopharm.optimizer.service.OptimizerService1;
@@ -28,6 +29,15 @@ public class OptimizerController {
 
     @Autowired
     OrToolsService orTools;
+    
+    @Autowired
+    CbcSolver cbcSolver;
+
+    
+    @GetMapping("/cbc/v1")
+    void testCBC(){
+    	cbcSolver.solve();
+    }
 
     @GetMapping("/optimal-solution/v1")
     ResponseEntity<Solution> test(){
