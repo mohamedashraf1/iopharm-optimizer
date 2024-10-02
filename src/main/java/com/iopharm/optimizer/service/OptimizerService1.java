@@ -4,6 +4,8 @@ import com.iopharm.optimizer.model.Product;
 import com.iopharm.optimizer.model.Warehouse1;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 
 @Service
@@ -104,6 +106,53 @@ public class OptimizerService1 {
         return warehouses;
     }
 
+    public List<Product> getDynamicOrder(){
+        List<Product> order = new ArrayList<>();
+        Random r = new Random();
+        for(int i = 1 ; i <= 2000 ; i++){
+            // required quantity between 1 : 200
+            order.add(new Product(i, r.nextInt(200 - 1) + 1));
+        }
+        return order;
+    }
+
+    List<Warehouse1> getDynamicWarehouses(){
+        List<Warehouse1> warehouses = new ArrayList<>();
+
+        Random r = new Random();
+
+        for(int i = 1 ; i <= 20 ; i ++){
+            Warehouse1 temp1 = new Warehouse1();
+            temp1.setId(i);
+            // min order price between 0.5M : 5M
+            temp1.setMinOrderPrice(r.nextInt(5000000 - 500000) + 500000);
+            Map<Integer, Double> productPrices = new HashMap<>();
+
+            Set<Integer> selectedProducts = new HashSet<>();
+            for(int j = 1 ; j < 200 ; j++){
+                // product id between 1 : 2000
+                Integer productId = r.nextInt(2000 - 1) + 1;
+                selectedProducts.add(productId);
+                // price between 10 : 500
+                productPrices.put(productId, r.nextDouble(500 - 10) + 10);
+            }
+
+            temp1.setProductPrices(productPrices);
+
+            Map<Integer, Integer> productQuantities = new HashMap<>();
+            for(Integer productId : selectedProducts){
+                // quantity between 1 : 200
+                productQuantities.put(productId, r.nextInt(200 - 1) + 1);
+            }
+
+            temp1.setProductQuantities(productQuantities);
+
+            warehouses.add(temp1);
+        }
+
+        return warehouses;
+    }
+
     List<Product> getOrder(){
         List<Product> order = new ArrayList<>();
         order.add(new Product(1, 5));
@@ -114,8 +163,11 @@ public class OptimizerService1 {
     }
 
     public Map<Integer, List<Product>> getOptimizedSolution(){
-        List<Warehouse1> warehouses = getWarehouses();
-        List<Product> order = getOrder();
+        List<Warehouse1> warehouses = getDynamicWarehouses();
+        List<Product> order = getDynamicOrder();
+
+        Instant start = Instant.now();
+
         setWarehousesById(warehouses);
         setProductsById(order);
 
@@ -179,6 +231,8 @@ public class OptimizerService1 {
 
 
         if(notSatisfiedWarehousesIds.isEmpty()){ // all warehouses satisfy the criteria
+            Instant end = Instant.now();
+            System.out.println("Duration in milli second: " + Duration.between(start, end).toMillis());
             return solution;
         }
 
@@ -199,6 +253,9 @@ public class OptimizerService1 {
         for(Integer warehouseId : notSatisfiedWarehousesIds){
             System.out.println("warehouse: " + warehouseId + " with products: " + assignment.get(warehouseId));
         }
+
+        Instant end = Instant.now();
+        System.out.println("Duration in milli second: " + Duration.between(start, end).toMillis());
 
         return solution;
     }
