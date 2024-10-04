@@ -12,16 +12,17 @@ import com.iopharm.optimizer.dtos.WarehouseProductDTO;
 import com.iopharm.optimizer.model.Product;
 import com.iopharm.optimizer.model.Warehouse1;
 import com.iopharm.optimizer.model.WarehouseProduct;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import  com.google.ortools.Loader;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class OrToolsService {
+    @Autowired
+    OptimizerService1 optimizerService1;
+
     public void solve() {
 
         Loader.loadNativeLibraries();
@@ -114,6 +115,53 @@ public class OrToolsService {
 
     }
 
+    public List<Product> getDynamicOrder(){
+        List<Product> order = new ArrayList<>();
+        Random r = new Random();
+        for(int i = 0 ; i < 10 ; i++){
+            // required quantity between 1 : 200
+            order.add(new Product(i, r.nextInt(200 - 1) + 1));
+        }
+        return order;
+    }
+
+    List<Warehouse1> getDynamicWarehouses(){
+        List<Warehouse1> warehouses = new ArrayList<>();
+
+        Random r = new Random();
+
+        for(int i = 0 ; i < 5 ; i ++){
+            Warehouse1 temp1 = new Warehouse1();
+            temp1.setId(i);
+            // min order price between 0.5M : 5M
+            temp1.setMinOrderPrice(r.nextInt(5000 - 1000) + 1000);
+            Map<Integer, Double> productPrices = new HashMap<>();
+
+            Set<Integer> selectedProducts = new HashSet<>();
+            for(int j = 0; j < 5 ; j++){
+                // product id between 1 : 2000
+                Integer productId = r.nextInt(5 - 1) + 1;
+                selectedProducts.add(productId);
+                // price between 10 : 500
+                productPrices.put(productId, r.nextDouble(500 - 10) + 10);
+            }
+
+            temp1.setProductPrices(productPrices);
+
+            Map<Integer, Integer> productQuantities = new HashMap<>();
+            for(Integer productId : selectedProducts){
+                // quantity between 1 : 200
+                productQuantities.put(productId, r.nextInt(200 - 1) + 1);
+            }
+
+            temp1.setProductQuantities(productQuantities);
+
+            warehouses.add(temp1);
+        }
+
+        return warehouses;
+    }
+
     List<Warehouse1> getWarehouses(){
         List<Warehouse1> warehouses = new ArrayList<>();
         Warehouse1 temp1 = new Warehouse1();
@@ -122,12 +170,16 @@ public class OrToolsService {
         Map<Integer, Double> productPrices = new HashMap<>();
         productPrices.put(1, 10.0);
         productPrices.put(2, 20.0);
+        productPrices.put(3, 20.0);
+        productPrices.put(4, 20.0);
 
         temp1.setProductPrices(productPrices);
 
         Map<Integer, Integer> productQuantities = new HashMap<>();
-        productQuantities.put(1, 70);
-        productQuantities.put(2, 150);
+        productQuantities.put(1, 2);
+        productQuantities.put(2, 5);
+        productQuantities.put(3, 5);
+        productQuantities.put(4, 5);
 
         temp1.setProductQuantities(productQuantities);
 
@@ -135,28 +187,79 @@ public class OrToolsService {
 
         Warehouse1 temp2 = new Warehouse1();
         temp2.setId(2);
-        temp2.setMinOrderPrice(1500);
+        temp2.setMinOrderPrice(10);
         Map<Integer, Double> productPrices2 = new HashMap<>();
-        productPrices2.put(1, 15.0);
-        productPrices2.put(2, 25.0);
+        productPrices2.put(1, 20.0);
+        productPrices2.put(2, 10.0);
+        productPrices2.put(3, 20.0);
+        productPrices2.put(4, 20.0);
 
         temp2.setProductPrices(productPrices2);
 
         Map<Integer, Integer> productQuantities2 = new HashMap<>();
-        productQuantities2.put(1, 1);
-        productQuantities2.put(2, 100);
+        productQuantities2.put(1, 5);
+        productQuantities2.put(2, 5);
+        productQuantities2.put(3, 5);
+        productQuantities2.put(4, 5);
 
         temp2.setProductQuantities(productQuantities2);
 
         warehouses.add(temp2);
+
+
+
+        Warehouse1 temp3 = new Warehouse1();
+        temp3.setId(3);
+        temp3.setMinOrderPrice(60);
+        Map<Integer, Double> productPrices3 = new HashMap<>();
+        productPrices3.put(1, 20.0);
+        productPrices3.put(2, 20.0);
+        productPrices3.put(3, 10.0);
+        productPrices3.put(4, 20.0);
+
+        temp3.setProductPrices(productPrices3);
+
+        Map<Integer, Integer> productQuantities3 = new HashMap<>();
+        productQuantities3.put(1, 1);
+        productQuantities3.put(2, 5);
+        productQuantities3.put(3, 5);
+        productQuantities3.put(4, 5);
+
+        temp3.setProductQuantities(productQuantities3);
+
+        warehouses.add(temp3);
+
+
+        Warehouse1 temp4 = new Warehouse1();
+        temp4.setId(4);
+        temp4.setMinOrderPrice(10);
+        Map<Integer, Double> productPrices4 = new HashMap<>();
+        productPrices4.put(1, 20.0);
+        productPrices4.put(2, 20.0);
+        productPrices4.put(3, 20.0);
+        productPrices4.put(4, 10.0);
+
+        temp4.setProductPrices(productPrices4);
+
+        Map<Integer, Integer> productQuantities4 = new HashMap<>();
+        productQuantities4.put(1, 5);
+        productQuantities4.put(2, 5);
+        productQuantities4.put(3, 5);
+        productQuantities4.put(4, 5);
+
+        temp4.setProductQuantities(productQuantities4);
+
+        warehouses.add(temp4);
 
         return warehouses;
     }
 
     List<Product> getOrder(){
         List<Product> order = new ArrayList<>();
-        order.add(new Product(1, 80));
-        order.add(new Product(2, 70));
+        order.add(new Product(1, 5));
+        order.add(new Product(2, 5));
+        order.add(new Product(3, 5));
+        order.add(new Product(4, 5));
         return order;
     }
 
@@ -313,21 +416,22 @@ public class OrToolsService {
 
         // Penalty for unmet demand (i.e., maximize quantity supplied)
         // Use a large penalty to force the solver to fulfill as much demand as possible
-        // 1000 * unMetDemandP2 + 1000 * unMetDemandP2 is added to the objective to be minimized
+        // 1000 * unMetDemandP2 + 1000 * unMetDemandP1 is added to the objective to be minimized
         double penaltyForUnmetDemand = 1000;  // Increase this penalty to ensure unmet demand is discouraged
         for (int j = 0; j < numProducts; j++) {
             objective.setCoefficient(unmetDemand[j], penaltyForUnmetDemand);  // Penalize unmet demand heavily
         }
 
-        // now objective function is 10x11 + 20x12 + 15x21 + 25x22 + 1000 * unMetDemandP2 + 1000 * unMetDemandP2
+        // now objective function is 10x11 + 20x12 + 15x21 + 25x22 + 1 * unMetDemandP2 + 1 * unMetDemandP1
         objective.setMinimization();  // Set to minimize the total objective
 
         // Demand constraints: total supplied + unmet demand = total demand
         for (int j = 0; j < numProducts; j++) {
             MPConstraint demandConstraint = solver.makeConstraint(orderList.get(j).getQuantity(), orderList.get(j).getQuantity(), "demand_" + j);
-            for (int i = 0; i < numWarehouses; i++) {
+            for (int i = 0; i < numWarehouses; i++) { // x11(50) + x12(50) = demand of p1
                 demandConstraint.setCoefficient(x[i][j], 1);  // Sum of all supplies should be part of the demand
             }
+            // x11 + x12 + unmet of p1 = demand of p1
             demandConstraint.setCoefficient(unmetDemand[j], 1);  // Add unmet demand as part of the equation
         }
 
@@ -378,6 +482,165 @@ public class OrToolsService {
         System.out.println("Problem solved in " + solver.wallTime() + " milliseconds");
         System.out.println("Problem solved in " + solver.iterations() + " iterations");
     }
+
+    public void solveWithMinOrderPostProcessing() {
+        Loader.loadNativeLibraries();
+
+        List<Warehouse1> warehouseList = getDynamicWarehouses();
+        int numWarehouses = warehouseList.size();
+        List<Product> orderList = getDynamicOrder();
+        int numProducts = orderList.size();
+
+        System.out.println(warehouseList);
+        System.out.println(orderList);
+
+        System.out.println("----------------------------------");
+        optimizerService1.getOptimizedSolution(warehouseList, orderList);
+        System.out.println("---------------------------------");
+
+        // Create the solver
+        MPSolver solver = MPSolver.createSolver("CBC_MIXED_INTEGER_PROGRAMMING");
+        if (solver == null) {
+            System.out.println("Could not create solver CBC_MIXED_INTEGER_PROGRAMMING");
+            return;
+        }
+
+        // Decision variables: number of units sourced from each warehouse
+        MPVariable[][] x = new MPVariable[numWarehouses][numProducts]; //x11
+        for (int i = 0; i < numWarehouses; i++) {
+            for(int j=0; j<numProducts; j++){
+                if (warehouseList.get(i).getProductQuantities().get(j) != null) {
+                    x[i][j] = solver.makeNumVar(0, warehouseList.get(i).getProductQuantities().get(j),
+                            "x_" + i + "_" + j);
+                }else{
+                        x[i][j] = solver.makeNumVar(0, 0, "x_" + i + "_" + j);
+                }
+            }
+        }
+
+        // Additional variables for unmet demand (slack variables)
+        MPVariable[] unmetDemand = new MPVariable[numProducts];
+        for (int j = 0; j < numProducts; j++) {
+            unmetDemand[j] = solver.makeNumVar(0, orderList.get(j).getQuantity(), "unmetDemand_" + j);
+        }
+
+        // Penalty for unmet demand (i.e., maximize quantity supplied)
+        // Use a large penalty to force the solver to fulfill as much demand as possible
+        // 1000 * unMetDemandP2 + 1000 * unMetDemandP2 is added to the objective to be minimized
+        // now objective function is 10x11 + 20x12 + 15x21 + 25x22 + 1000 * unMetDemandP2 + 1000 * unMetDemandP2
+
+        // Objective function: minimize total cost + large penalty for unmet demand
+        MPObjective objective = solver.objective();
+
+        // Minimize the total cost
+        for (int i = 0; i < numWarehouses; i++) {
+            int j = 0;
+            for (Map.Entry<Integer, Double> productPrice : warehouseList.get(i).getProductPrices().entrySet()) {
+                objective.setCoefficient(x[i][j], warehouseList.get(i).getProductPrices().get(productPrice.getKey()));
+                j++;
+            }
+        }
+
+        // Penalty for unmet demand
+        double penaltyForUnmetDemand = 1000;
+        for (int j = 0; j < numProducts; j++) {
+            objective.setCoefficient(unmetDemand[j], penaltyForUnmetDemand);
+        }
+
+        objective.setMinimization();
+
+        // Demand constraints: total supplied + unmet demand = total demand
+        for (int j = 0; j < numProducts; j++) {
+            MPConstraint demandConstraint = solver.makeConstraint(orderList.get(j).getQuantity(), orderList.get(j).getQuantity(), "demand_" + j);
+            for (int i = 0; i < numWarehouses; i++) {
+                demandConstraint.setCoefficient(x[i][j], 1);
+            }
+            demandConstraint.setCoefficient(unmetDemand[j], 1);
+        }
+
+        // Solve the problem
+        ResultStatus resultStatus = solver.solve();
+
+        // Check and print the initial solution
+        Map<Integer, Double> warehousesTotalOrder = new HashMap<>();
+        if (resultStatus == ResultStatus.OPTIMAL) {
+            System.out.println("Initially Optimal solution ... ");
+            for (int i = 0; i < numWarehouses; i++) {
+                Double sumPerWarehouse = 0.0;
+                for (int j = 0; j < numProducts; j++) {
+                    if (x[i][j].solutionValue() > 0) {
+                        System.out.println("product " + orderList.get(j).getId() + " from warehouse " +
+                                warehouseList.get(i).getId() + " : " + x[i][j].solutionValue());
+
+                        sumPerWarehouse += x[i][j].solutionValue() * warehouseList.get(i).getProductPrices()
+                                .get(orderList.get(j).getId());
+                    }
+                }
+                warehousesTotalOrder.put(warehouseList.get(i).getId(), sumPerWarehouse);
+            }
+
+            double sumOfUnmetQty = 0;
+            for (int j = 0; j < numProducts; j++) {
+                sumOfUnmetQty += unmetDemand[j].solutionValue();
+            }
+
+            Double totalCost = solver.objective().value() - penaltyForUnmetDemand * sumOfUnmetQty;
+            System.out.println("With Total cost: " + totalCost);
+
+            // Post-process: Check if any warehouse violates min order constraint
+            boolean rerun = false;
+            for (Map.Entry<Integer, Double> warehouse : warehousesTotalOrder.entrySet()) {
+                Warehouse1 warehouse1 = warehouseList.stream()
+                        .filter(w -> w.getId() == warehouse.getKey())
+                        .findFirst().get();
+                if (warehouse.getValue() < warehouse1.getMinOrderPrice()) {
+                    System.out.println("Warehouse " + warehouse.getKey() + " violates min order constraint, removing from the order.");
+                    for (int j = 0; j < numProducts; j++) {
+                        // Set product quantities for this warehouse to 0
+                        x[warehouse.getKey()][j].setBounds(0, 0);
+                    }
+                    rerun = true;
+                }
+            }
+
+            // Rerun the solver if any warehouse was dropped
+            if (rerun) {
+                System.out.println("Rerunning the solver with modified constraints...");
+                resultStatus = solver.solve();
+                if (resultStatus == ResultStatus.OPTIMAL) {
+                    System.out.println("Solution after enforcing min order constraints:");
+                    totalCost = 0.0;
+                    for (int i = 0; i < numWarehouses; i++) {
+                        Double sumPerWarehouse = 0.0;
+                        for (int j = 0; j < numProducts; j++) {
+                            if (x[i][j].solutionValue() > 0) {
+                                System.out.println("product " + orderList.get(j).getId() + " from warehouse " + warehouseList.get(i).getId() + " : " + x[i][j].solutionValue());
+                                sumPerWarehouse += x[i][j].solutionValue() * warehouseList.get(i).getProductPrices().get(orderList.get(j).getId());
+                            }
+                        }
+                        totalCost += sumPerWarehouse;
+                    }
+
+                    sumOfUnmetQty = 0;
+                    for (int j = 0; j < numProducts; j++) {
+                        sumOfUnmetQty += unmetDemand[j].solutionValue();
+                    }
+
+                    totalCost = solver.objective().value() - penaltyForUnmetDemand * sumOfUnmetQty;
+                    System.out.println("Total cost after min order enforcement: " + totalCost);
+                } else {
+                    System.out.println("No optimal solution found after enforcing min order constraints.");
+                }
+            }
+        } else {
+            System.out.println("The problem does not have an optimal solution.");
+        }
+
+        System.out.println("-----------------------");
+        System.out.println("Problem solved in " + solver.wallTime() + " milliseconds");
+        System.out.println("Problem solved in " + solver.iterations() + " iterations");
+    }
+
 
 //    public void solve2() {
 //        Loader.loadNativeLibraries();
@@ -812,6 +1075,8 @@ public class OrToolsService {
             System.out.println("The problem does not have an optimal solution.");
         }
     }
+
+
 
 
 }

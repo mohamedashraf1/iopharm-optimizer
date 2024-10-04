@@ -46,7 +46,7 @@ public class OptimizerController {
 
     @GetMapping("/optimal-solution/v2")
     ResponseEntity<?> testV2(){
-        return new ResponseEntity<>(optimizerService1.getOptimizedSolution(), HttpStatus.OK);
+        return new ResponseEntity<>(null, HttpStatus.OK);
     }
 
     @GetMapping("/optimal-solution-or/v1")
@@ -122,7 +122,7 @@ public class OptimizerController {
 
     @GetMapping("/optimal-solution-or/v7")
     void testORv7() {
-        orTools.solve3();
+        orTools.solveWithMinOrderPostProcessing();
     }
 
 }

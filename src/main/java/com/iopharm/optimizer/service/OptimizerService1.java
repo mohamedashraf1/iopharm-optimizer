@@ -162,9 +162,9 @@ public class OptimizerService1 {
         return order;
     }
 
-    public Map<Integer, List<Product>> getOptimizedSolution(){
-        List<Warehouse1> warehouses = getDynamicWarehouses();
-        List<Product> order = getDynamicOrder();
+    public Map<Integer, List<Product>> getOptimizedSolution(List<Warehouse1> warehouses , List<Product> order){
+//        List<Warehouse1> warehouses = getDynamicWarehouses();
+//        List<Product> order = getDynamicOrder();
 
         Instant start = Instant.now();
 
@@ -196,7 +196,7 @@ public class OptimizerService1 {
 
                 Product availableProduct;
 
-                if(cheapestWarehouseQuantity >= product.getQuantity()){// the warehouse can satisfy the whole product quantity
+                if(cheapestWarehouseQuantity >= requiredQuantity){// the warehouse can satisfy the whole product quantity
                     availableProduct = new Product(product.getId(), requiredQuantity);
                     cheapestWarehouse.getProductQuantities().put(product.getId(), cheapestWarehouseQuantity - requiredQuantity); // subtract the quantity from warehouse
                     requiredQuantity = 0;
@@ -254,11 +254,11 @@ public class OptimizerService1 {
             System.out.println("warehouse: " + warehouseId + " with products: " + assignment.get(warehouseId));
         }
 
-        int totalCost = 0;
+        double totalCost = 0;
         for(Integer warehouseId : solution.keySet()){
-            int warehouseCost = 0;
+            double warehouseCost = 0;
             for(Product product : solution.get(warehouseId)){
-                warehouseCost += (int) (product.getQuantity()*warehousesById.get(warehouseId).getProductPrices().get(product.getId()));
+                warehouseCost += (product.getQuantity()*warehousesById.get(warehouseId).getProductPrices().get(product.getId()));
             }
             totalCost += warehouseCost;
             System.out.println("Warehouse " + warehouseId + " cost is: " + warehouseCost);
