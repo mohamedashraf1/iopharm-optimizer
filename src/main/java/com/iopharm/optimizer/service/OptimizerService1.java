@@ -254,6 +254,17 @@ public class OptimizerService1 {
             System.out.println("warehouse: " + warehouseId + " with products: " + assignment.get(warehouseId));
         }
 
+        int totalCost = 0;
+        for(Integer warehouseId : solution.keySet()){
+            int warehouseCost = 0;
+            for(Product product : solution.get(warehouseId)){
+                warehouseCost += (int) (product.getQuantity()*warehousesById.get(warehouseId).getProductPrices().get(product.getId()));
+            }
+            totalCost += warehouseCost;
+            System.out.println("Warehouse " + warehouseId + " cost is: " + warehouseCost);
+        }
+        System.out.println("Total Cost :" + totalCost);
+
         Instant end = Instant.now();
         System.out.println("Duration in milli second: " + Duration.between(start, end).toMillis());
 
