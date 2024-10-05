@@ -167,4 +167,18 @@ public class OptimizerController {
 
         orTools.solveFinal(warehouses, demand);
     }
+    @GetMapping("/solve/4")
+    void testAll4() {
+        List<Warehouse1> warehouses = testService.getWarehouses4();
+        List<Product> demand = testService.getOrder4();
+
+        orTools.solveFinal(warehouses, demand);
+    }
+    @GetMapping("/solve/6")
+    void testAll6() {
+        List<Warehouse1> warehouses = testService.getWarehouses6();
+        List<Product> demand = testService.getOrder6();
+
+        orTools.solveFinal(warehouses, demand);
+    }
 }
