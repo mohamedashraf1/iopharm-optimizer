@@ -7,7 +7,9 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Product {
+public class CbcProduct {
     int id;
     int quantity;
+    double price;
+    
 }

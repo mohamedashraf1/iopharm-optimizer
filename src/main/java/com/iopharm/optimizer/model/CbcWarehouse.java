@@ -1,5 +1,7 @@
 package com.iopharm.optimizer.model;
 
+import java.util.List;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -7,7 +9,9 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Product {
-    int id;
-    int quantity;
+public class CbcWarehouse {
+    Integer id;
+    double minOrderPrice;
+    List<CbcProduct> products;
+
 }

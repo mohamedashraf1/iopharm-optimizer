@@ -1,28 +1,41 @@
 package com.iopharm.optimizer.service;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import  com.google.ortools.Loader;
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPSolver.ResultStatus;
 import com.google.ortools.linearsolver.MPVariable;
-import com.google.ortools.sat.*;
 import com.iopharm.optimizer.dtos.ProductDTO;
 import com.iopharm.optimizer.dtos.WarehouseDTO;
 import com.iopharm.optimizer.dtos.WarehouseProductDTO;
+import com.iopharm.optimizer.model.CbcInput;
+import com.iopharm.optimizer.model.CbcProduct;
+import com.iopharm.optimizer.model.CbcWarehouse;
 import com.iopharm.optimizer.model.Product;
 import com.iopharm.optimizer.model.Warehouse1;
 import com.iopharm.optimizer.model.WarehouseProduct;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import  com.google.ortools.Loader;
-
-import java.util.*;
 
 @Service
 public class OrToolsService {
     @Autowired
     OptimizerService1 optimizerService1;
 
+    @Autowired
+    CbcSolver cbcSolver;
+    
     public void solve() {
 
         Loader.loadNativeLibraries();
@@ -118,7 +131,7 @@ public class OrToolsService {
     public List<Product> getDynamicOrder(){
         List<Product> order = new ArrayList<>();
         Random r = new Random();
-        for(int i = 0 ; i < 10 ; i++){
+        for(int i = 0 ; i < 5 ; i++){
             // required quantity between 1 : 200
             order.add(new Product(i, r.nextInt(200 - 1) + 1));
         }
@@ -140,7 +153,7 @@ public class OrToolsService {
             Set<Integer> selectedProducts = new HashSet<>();
             for(int j = 0; j < 5 ; j++){
                 // product id between 1 : 2000
-                Integer productId = r.nextInt(5 - 1) + 1;
+                Integer productId = j;//r.nextInt(5 - 1) + 1;
                 selectedProducts.add(productId);
                 // price between 10 : 500
                 productPrices.put(productId, r.nextDouble(500 - 10) + 10);
@@ -496,6 +509,24 @@ public class OrToolsService {
 
         System.out.println("----------------------------------");
         optimizerService1.getOptimizedSolution(warehouseList, orderList);
+        System.out.println("---------------------------------");
+
+        List<CbcProduct> demand = orderList.stream()
+        		.map(product -> new CbcProduct(product.getId(), product.getQuantity(), 0))
+        		.collect(Collectors.toList());
+        
+        List<CbcWarehouse> warehouses = new ArrayList<CbcWarehouse>();
+        for (Warehouse1 warehouse : warehouseList) {
+        	List<CbcProduct> products = new ArrayList<CbcProduct>();
+        	for (int i : warehouse.getProductPrices().keySet()) {
+        		products.add(
+        				new CbcProduct(i, warehouse.getProductQuantities().get(i), warehouse.getProductPrices().get(i)));
+        	}
+        	warehouses.add(new CbcWarehouse(warehouse.getId(), warehouse.getMinOrderPrice(), products));
+        }
+
+        cbcSolver.solve(new CbcInput(demand, warehouses));
+        
         System.out.println("---------------------------------");
 
         // Create the solver

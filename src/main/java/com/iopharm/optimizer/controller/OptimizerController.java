@@ -1,22 +1,26 @@
 package com.iopharm.optimizer.controller;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.iopharm.optimizer.dtos.ProductDTO;
 import com.iopharm.optimizer.dtos.WarehouseDTO;
 import com.iopharm.optimizer.dtos.WarehouseProductDTO;
+import com.iopharm.optimizer.model.CbcInput;
 import com.iopharm.optimizer.model.Solution;
 import com.iopharm.optimizer.service.CbcSolver;
 import com.iopharm.optimizer.service.IOTools;
 import com.iopharm.optimizer.service.OptimizerService;
 import com.iopharm.optimizer.service.OptimizerService1;
 import com.iopharm.optimizer.service.OrToolsService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @RestController
 public class OptimizerController {
@@ -34,9 +38,10 @@ public class OptimizerController {
     CbcSolver cbcSolver;
 
     
-    @GetMapping("/cbc/v1")
-    void testCBC(){
-    	cbcSolver.solve();
+    @PostMapping("/cbc/v1")
+    void testCBC(@RequestBody CbcInput input){
+    	System.out.println(input);
+    	cbcSolver.solve(input);
     }
 
     @GetMapping("/optimal-solution/v1")
