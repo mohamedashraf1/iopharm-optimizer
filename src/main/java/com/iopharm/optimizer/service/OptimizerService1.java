@@ -199,12 +199,12 @@ public class OptimizerService1 {
                 Product availableProduct;
 
                 if(cheapestWarehouseQuantity >= requiredQuantity){// the warehouse can satisfy the whole product quantity
-                    availableProduct = new Product(product.getId(), requiredQuantity);
+                    availableProduct = new Product(product.getId(), requiredQuantity, product.getName());
                     cheapestWarehouse.getProductQuantities().put(product.getId(), cheapestWarehouseQuantity - requiredQuantity); // subtract the quantity from warehouse
                     requiredQuantity = 0;
                 }else {
                     requiredQuantity -= cheapestWarehouseQuantity;
-                    availableProduct = new Product(product.getId(), cheapestWarehouseQuantity);
+                    availableProduct = new Product(product.getId(), cheapestWarehouseQuantity, product.getName());
                     cheapestWarehouse.getProductQuantities().put(product.getId(), 0); // this warehouse now doesn't have any of this product
                 }
 
@@ -263,21 +263,35 @@ public class OptimizerService1 {
 
     void printSolution(Map<Integer, List<Product>> solution, Set<Product> notReachableProducts,
                        Set<Integer> notSatisfiedWarehousesIds, Map<Integer, List<Product>> assignment){
-        System.out.println("solution: " + solution);
-        System.out.println("Not reachable Products: " + notReachableProducts);
-        System.out.println("not satisfied warehouses");
-        for(Integer warehouseId : notSatisfiedWarehousesIds){
-            System.out.println("warehouse: " + warehouseId + " with products: " + assignment.get(warehouseId));
+        System.out.println("solution: ");
+        for(Integer warehouseId : solution.keySet()){
+            Warehouse1 warehouse = warehousesById.get(warehouseId);
+            System.out.println("Warehouse: " + warehouse.getName() + " has the below products:");
+            for(Product product : solution.get(warehouseId)){
+                System.out.println("Product: " + product.getName() + " with quantity: "+ product.getQuantity());
+            }
         }
+        System.out.println();
+
+
+        System.out.println("Not reachable Products: " + notReachableProducts);
+        System.out.println();
+        System.out.println("not satisfied warehouses:");
+        for(Integer warehouseId : notSatisfiedWarehousesIds){
+            Warehouse1 warehouse = warehousesById.get(warehouseId);
+            System.out.println("warehouse: " + warehouse.getName() + " with products: " + assignment.get(warehouseId));
+        }
+        System.out.println();
 
         double totalCost = 0;
         for(Integer warehouseId : solution.keySet()){
             double warehouseCost = 0;
+            Warehouse1 warehouse = warehousesById.get(warehouseId);
             for(Product product : solution.get(warehouseId)){
-                warehouseCost += (product.getQuantity()*warehousesById.get(warehouseId).getProductPrices().get(product.getId()));
+                warehouseCost += (product.getQuantity()*warehouse.getProductPrices().get(product.getId()));
             }
             totalCost += warehouseCost;
-            System.out.println("Warehouse " + warehouseId + " cost is: " + warehouseCost);
+            System.out.println("Warehouse " + warehouse.getName() + " cost is: " + warehouseCost);
         }
         System.out.println("Total Cost :" + totalCost);
     }
@@ -368,7 +382,7 @@ public class OptimizerService1 {
                 List<Warehouse1> availableWarehouses = getAvailableWarehouses(product, notSatisfiedWarehouses);
                 Warehouse1 secondCheapestWarehouse = findCheapestWarehouse(product.getId(), availableWarehouses);
                 if(secondCheapestWarehouse == null){
-                    notReachableProducts.add(new Product(product.getId(), requiredQuantity));
+                    notReachableProducts.add(new Product(product.getId(), requiredQuantity, product.getName()));
                     break;
                 }
 
@@ -376,12 +390,12 @@ public class OptimizerService1 {
 
                 Product availableProduct;
                 if(secondCheapestAvailableQuantity >= requiredQuantity){// subtract the quantity from warehouse
-                    availableProduct = new Product(product.getId(), requiredQuantity);
+                    availableProduct = new Product(product.getId(), requiredQuantity, product.getName());
                     secondCheapestWarehouse.getProductQuantities().put(product.getId(), secondCheapestAvailableQuantity - requiredQuantity);
                     requiredQuantity = 0;
                 }else {
                     requiredQuantity -= secondCheapestAvailableQuantity;
-                    availableProduct = new Product(product.getId(), secondCheapestAvailableQuantity);
+                    availableProduct = new Product(product.getId(), secondCheapestAvailableQuantity, product.getName());
                     secondCheapestWarehouse.getProductQuantities().put(product.getId(), 0);
                 }
 
