@@ -11,5 +11,6 @@ public class CbcProduct {
     int id;
     int quantity;
     double price;
+    String name;
     
 }

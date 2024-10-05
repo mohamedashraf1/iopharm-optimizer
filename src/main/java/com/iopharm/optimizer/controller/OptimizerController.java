@@ -15,12 +15,15 @@ import com.iopharm.optimizer.dtos.ProductDTO;
 import com.iopharm.optimizer.dtos.WarehouseDTO;
 import com.iopharm.optimizer.dtos.WarehouseProductDTO;
 import com.iopharm.optimizer.model.CbcInput;
+import com.iopharm.optimizer.model.Product;
 import com.iopharm.optimizer.model.Solution;
+import com.iopharm.optimizer.model.Warehouse1;
 import com.iopharm.optimizer.service.CbcSolver;
 import com.iopharm.optimizer.service.IOTools;
 import com.iopharm.optimizer.service.OptimizerService;
 import com.iopharm.optimizer.service.OptimizerService1;
 import com.iopharm.optimizer.service.OrToolsService;
+import com.iopharm.optimizer.service.TestService;
 
 @RestController
 public class OptimizerController {
@@ -37,6 +40,8 @@ public class OptimizerController {
     @Autowired
     CbcSolver cbcSolver;
 
+    @Autowired
+    TestService testService;
     
     @PostMapping("/cbc/v1")
     void testCBC(@RequestBody CbcInput input){
@@ -130,4 +135,11 @@ public class OptimizerController {
         orTools.solveWithMinOrderPostProcessing();
     }
 
+    @GetMapping("/solve/1")
+    void testAll() {
+    	List<Warehouse1> warehouses = testService.getWarehouses1();
+    	List<Product> demand = testService.getOrder1();
+    	
+    	orTools.solveFinal(warehouses, demand);
+    }
 }

@@ -11,6 +11,7 @@ import java.util.Map;
 @AllArgsConstructor
 public class Warehouse1 {
     Integer id;
+    String name;
     double minOrderPrice;
     Map<Integer, Double> productPrices; // between productId and price
     Map<Integer, Integer> productQuantities; // between productId and available quantity
