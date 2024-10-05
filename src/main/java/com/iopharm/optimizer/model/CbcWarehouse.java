@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CbcWarehouse {
     Integer id;
+    String name;
     double minOrderPrice;
     List<CbcProduct> products;
 

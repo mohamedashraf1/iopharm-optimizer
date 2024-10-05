@@ -143,6 +143,23 @@ public class OptimizerController {
     	orTools.solveFinal(warehouses, demand);
     }
 
+
+    @GetMapping("/solve/3")
+    void testAll3() {
+        List<Warehouse1> warehouses = testService.getWarehouses3();
+        List<Product> demand = testService.getOrder3();
+
+        orTools.solveFinal(warehouses, demand);
+    }
+
+    @GetMapping("/solve/5")
+    void testAll5() {
+        List<Warehouse1> warehouses = testService.getWarehouses5();
+        List<Product> demand = testService.getOrder5();
+
+        orTools.solveFinal(warehouses, demand);
+    }
+
     @GetMapping("/solve/2")
     void testAll2() {
         List<Warehouse1> warehouses = testService.getWarehouses2();

@@ -149,7 +149,7 @@ public class CbcSolver {
 
 		// Check the result status
 		if (resultStatus == MPSolver.ResultStatus.OPTIMAL) {
-			System.out.println("Optimal solution found!");
+//			System.out.println("Optimal solution found!");
 
 			// Output the solution
 			double totalCost = 0;
@@ -157,47 +157,43 @@ public class CbcSolver {
 				for (int j = 0; j < numWarehouses; j++) {
 					int quantity = (int) quantities[i][j].solutionValue();
 					if (quantity > 0) {
-						System.out.println(
-								"Order " + quantity + " units of product " + (i + 1) + " from warehouse " + (j + 1));
+//						System.out.println("Order " + quantity + " units of product " + (i + 1) + " from warehouse " + (j + 1));
 						totalCost += quantity * warehouseList.get(j).getProducts().get(i).getPrice();
 					}
 				}
-				System.out.println();
+//				System.out.println();
 				// +++++
 				// Output unmet demand
 				double unmet = unmetDemand[i].solutionValue();
 				if (unmet > 0) {
 					System.out
-							.println("Unmet demand for product " + (i + 1) + ": " + unmet + " units (penalty applied)");
+							.println("Unmet demand for product " + (i + 1) + "(" + demand.get(i).getName() + "): " + unmet + " units (penalty applied)");
 					// totalCost += unmet * penaltyUnmetDemand;
 				}
 			}
 
 			System.out.println("Total cost: $" + totalCost);
-			System.out.println();
+//			System.out.println();
 
 			for (int j = 0; j < numWarehouses; j++) {
 				totalCost = 0;
-				System.out.println("Order from warehouse " + (j + 1) + ":");
+				System.out.println("Order from warehouse " + warehouseList.get(j).getName() + ":");
 				for (int i = 0; i < numProducts; i++) {
 					int quantity = (int) quantities[i][j].solutionValue();
 					if (quantity > 0) {
-						System.out.println("- product " + (i + 1) + ": " + quantity + " units ("
+						System.out.println("- product " + (i + 1) + "(" + demand.get(i).getName() + "): " + quantity + " units ("
 								+ warehouseList.get(j).getProducts().get(i).getPrice() + ")");
 						totalCost += quantity * warehouseList.get(j).getProducts().get(i).getPrice();
 					}
 				}
-				System.out.println(totalCost);
-			}
-
-			for (int j = 0; j < numWarehouses; j++) {
 				if (metWarehouse[j].solutionValue() == 1) {
-					System.out.println("Warehouse " + (j + 1) + " is used.");
+					System.out.println("Warehouse " + warehouseList.get(j).getName() + " cost is: " + totalCost);
 				} else {
-                    System.out.println("Warehouse " + (j + 1) + " is discarded.");
+                    System.out.println("Warehouse " + warehouseList.get(j).getName() + " is discarded.");
                 }
 			}
-			System.out.println("iterations: " + solver.iterations());
+
+//			System.out.println("iterations: " + solver.iterations());
 			System.out.println("time: " + solver.wallTime() + " milllis");
 		} else {
 			System.out.println("No optimal solution found.");
