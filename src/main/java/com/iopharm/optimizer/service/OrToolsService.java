@@ -522,7 +522,7 @@ public class OrToolsService {
         		products.add(
         				new CbcProduct(i, warehouse.getProductQuantities().get(i), warehouse.getProductPrices().get(i), ""));
         	}
-        	warehouses.add(new CbcWarehouse(warehouse.getId(), warehouse.getMinOrderPrice(), products));
+        	warehouses.add(new CbcWarehouse(warehouse.getId(), warehouse.getName(), warehouse.getMinOrderPrice(), products));
         }
 
         cbcSolver.solve(new CbcInput(demand, warehouses));
@@ -690,7 +690,7 @@ public class OrToolsService {
         		products.add(
         				new CbcProduct(i, warehouse.getProductQuantities().get(i), warehouse.getProductPrices().get(i), ""));
         	}
-        	warehouses.add(new CbcWarehouse(warehouse.getId(), warehouse.getMinOrderPrice(), products));
+        	warehouses.add(new CbcWarehouse(warehouse.getId(), warehouse.getName(), warehouse.getMinOrderPrice(), products));
         }
 
         cbcSolver.solve(new CbcInput(demand, warehouses));
