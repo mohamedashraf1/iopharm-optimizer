@@ -10,4 +10,13 @@ import lombok.NoArgsConstructor;
 public class Product {
     int id;
     int quantity;
+    String name;
+    
+	public Product(int id, int quantity) {
+		super();
+		this.id = id;
+		this.quantity = quantity;
+	}
+    
+    
 }

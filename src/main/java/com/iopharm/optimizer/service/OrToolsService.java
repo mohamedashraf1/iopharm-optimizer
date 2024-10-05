@@ -135,7 +135,7 @@ public class OrToolsService {
         Random r = new Random();
         for(int i = 0 ; i < 5 ; i++){
             // required quantity between 1 : 200
-            order.add(new Product(i, r.nextInt(200 - 1) + 1));
+//            order.add(new Product(i, r.nextInt(200 - 1) + 1));
         }
         return order;
     }
@@ -177,7 +177,7 @@ public class OrToolsService {
         return warehouses;
     }
 
-    List<Warehouse1> getWarehouses(){
+    public List<Warehouse1> getWarehouses(){
         List<Warehouse1> warehouses = new ArrayList<>();
         Warehouse1 temp1 = new Warehouse1();
         temp1.setId(1);
@@ -269,7 +269,7 @@ public class OrToolsService {
         return warehouses;
     }
 
-    List<Product> getOrder(){
+    public List<Product> getOrder(){
         List<Product> order = new ArrayList<>();
         order.add(new Product(1, 5));
         order.add(new Product(2, 5));
@@ -1251,7 +1251,7 @@ public class OrToolsService {
         System.out.println("---------------------------------");
 
         List<CbcProduct> demand = orderList.stream()
-        		.map(product -> new CbcProduct(product.getId(), product.getQuantity(), 0))
+        		.map(product -> new CbcProduct(product.getId(), product.getQuantity(), 0, ""))
         		.collect(Collectors.toList());
 
         List<CbcWarehouse> warehouses = new ArrayList<CbcWarehouse>();
@@ -1259,7 +1259,7 @@ public class OrToolsService {
         	List<CbcProduct> products = new ArrayList<CbcProduct>();
         	for (int i : warehouse.getProductPrices().keySet()) {
         		products.add(
-        				new CbcProduct(i, warehouse.getProductQuantities().get(i), warehouse.getProductPrices().get(i)));
+        				new CbcProduct(i, warehouse.getProductQuantities().get(i), warehouse.getProductPrices().get(i), ""));
         	}
         	warehouses.add(new CbcWarehouse(warehouse.getId(), warehouse.getMinOrderPrice(), products));
         }
@@ -1411,6 +1411,31 @@ public class OrToolsService {
         System.out.println("Problem solved in " + solver.iterations() + " iterations");
     }
 
+    public void solveFinal(List<Warehouse1> warehouseList, List<Product> orderList) {
+        Loader.loadNativeLibraries();
+
+        System.out.println("----------------------------------");
+        optimizerService1.getOptimizedSolution(warehouseList, orderList);
+        System.out.println("---------------------------------");
+
+        List<CbcProduct> demand = orderList.stream()
+        		.map(product -> new CbcProduct(product.getId(), product.getQuantity(), 0, ""))
+        		.collect(Collectors.toList());
+        
+        List<CbcWarehouse> warehouses = new ArrayList<CbcWarehouse>();
+        for (Warehouse1 warehouse : warehouseList) {
+        	List<CbcProduct> products = new ArrayList<CbcProduct>();
+        	for (int i : warehouse.getProductPrices().keySet()) {
+        		products.add(
+        				new CbcProduct(i, warehouse.getProductQuantities().get(i), warehouse.getProductPrices().get(i), ""));
+        	}
+        	warehouses.add(new CbcWarehouse(warehouse.getId(), warehouse.getMinOrderPrice(), products));
+        }
+
+        cbcSolver.solve(new CbcInput(demand, warehouses));
+        
+        System.out.println("---------------------------------");
+    }
 
 //    public void solve2() {
 //        Loader.loadNativeLibraries();

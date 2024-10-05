@@ -168,6 +168,8 @@ public class OptimizerService1 {
 
         Instant start = Instant.now();
 
+        Set<Product> notReachableProducts = new HashSet<>();
+
         setWarehousesById(warehouses);
         setProductsById(order);
 
@@ -207,10 +209,10 @@ public class OptimizerService1 {
                 }
 
                 assignProductToWarehouse(cheapestWarehouse.getId(), availableProduct, assignment);
-
-
             }
 
+            if(requiredQuantity == product.getQuantity()) // there isn't any warehouse to get this product from
+                notReachableProducts.add(product);
         }
 
         // warehouseId, assignedOrderPrice
@@ -230,15 +232,19 @@ public class OptimizerService1 {
         }
 
 
-        if(notSatisfiedWarehousesIds.isEmpty()){ // all warehouses satisfy the criteria
+        if(notSatisfiedWarehousesIds.isEmpty()){// all warehouses satisfy the criteria
+
+            printSolution(solution, notReachableProducts, notSatisfiedWarehousesIds, assignment);
+
             Instant end = Instant.now();
             System.out.println("Duration in milli second: " + Duration.between(start, end).toMillis());
+
             return solution;
         }
 
         System.out.println("not satisfied warehouses Ids before: " + notSatisfiedWarehousesIds);
 
-        Set<Product> notReachableProducts = new HashSet<>();
+
         // take the order of the highest difference (between order price and minOrderPrice) warehouse and add them to the least difference
         while (!notSatisfiedWarehousesIds.isEmpty() && notSatisfiedWarehousesIds.size() > 1){
             System.out.println("reassign");
@@ -247,6 +253,16 @@ public class OptimizerService1 {
                     reassignProductsWithNextCheapest(solution, assignment, notSatisfiedWarehousesIds, warehousesOrderPrice);
         }
 
+        printSolution(solution, notReachableProducts, notSatisfiedWarehousesIds, assignment);
+
+        Instant end = Instant.now();
+        System.out.println("Duration in milli second: " + Duration.between(start, end).toMillis());
+
+        return solution;
+    }
+
+    void printSolution(Map<Integer, List<Product>> solution, Set<Product> notReachableProducts,
+                       Set<Integer> notSatisfiedWarehousesIds, Map<Integer, List<Product>> assignment){
         System.out.println("solution: " + solution);
         System.out.println("Not reachable Products: " + notReachableProducts);
         System.out.println("not satisfied warehouses");
@@ -264,11 +280,6 @@ public class OptimizerService1 {
             System.out.println("Warehouse " + warehouseId + " cost is: " + warehouseCost);
         }
         System.out.println("Total Cost :" + totalCost);
-
-        Instant end = Instant.now();
-        System.out.println("Duration in milli second: " + Duration.between(start, end).toMillis());
-
-        return solution;
     }
 
     List<Warehouse1> getAvailableWarehouses(Product product, List<Warehouse1> warehouses){
@@ -376,7 +387,14 @@ public class OptimizerService1 {
 
 
                 List<Product> secondCheapestWarehouseProducts = assignment.get(secondCheapestWarehouse.getId());
-                secondCheapestWarehouseProducts.add(availableProduct);
+
+                // check if this product already has a quantity in this warehouse and increase it
+                Product oldProduct = secondCheapestWarehouseProducts.stream().filter(p -> p.getId() == availableProduct.getId()).findFirst().orElse(null);
+                if(oldProduct == null)
+                    secondCheapestWarehouseProducts.add(availableProduct);
+                else
+                    oldProduct.setQuantity(oldProduct.getQuantity() + availableProduct.getQuantity());
+
                 assignment.put(secondCheapestWarehouse.getId(), secondCheapestWarehouseProducts);
             }
 
