@@ -71,7 +71,7 @@ public class OptimizerController {
 
     @GetMapping("/optimal-solution-or/v4")
     void testORv4() {
-        orTools.solve2();
+        orTools.solveWithMinOrderPrice();
     }
 
     @GetMapping("/optimal-solution-or/v5")
@@ -97,7 +97,7 @@ public class OptimizerController {
         warehouses.add(warehouse2);
 
         // Solve the optimization problem
-        orTools.solveOptimized(warehouses, products);
+//        orTools.solveOptimized(warehouses, products);
     }
     @GetMapping("/optimal-solution-or/v6")
     void testORv6() {
@@ -122,7 +122,7 @@ public class OptimizerController {
         warehouses.add(warehouse2);
 
         // Solve the optimization problem
-        orTools.solveOptimized(warehouses, products);
+//        orTools.solveOptimized(warehouses, products);
     }
 
     @GetMapping("/optimal-solution-or/v7")

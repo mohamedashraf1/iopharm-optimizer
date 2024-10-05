@@ -27,6 +27,10 @@ import com.iopharm.optimizer.model.CbcWarehouse;
 import com.iopharm.optimizer.model.Product;
 import com.iopharm.optimizer.model.Warehouse1;
 import com.iopharm.optimizer.model.WarehouseProduct;
+import org.springframework.stereotype.Service;
+import com.google.ortools.Loader;
+
+import java.util.*;
 
 @Service
 public class OrToolsService {
@@ -35,7 +39,7 @@ public class OrToolsService {
 
     @Autowired
     CbcSolver cbcSolver;
-    
+
     public void solve() {
 
         Loader.loadNativeLibraries();
@@ -47,14 +51,12 @@ public class OrToolsService {
         String[] products = {"Product A", "Product B"};
 
         // سعة التخزين لكل منتج في كل مخزن
-        int[][] storageCapacity = {
-                {100, 150}, // Warehouse 1 capacities for Product A and B
+        int[][] storageCapacity = {{100, 150}, // Warehouse 1 capacities for Product A and B
                 {200, 100}  // Warehouse 2 capacities for Product A and B
         };
 
         // أسعار المنتجات في كل مخزن
-        double[][] prices = {
-                {10, 20}, // Warehouse 1 prices for Product A and B
+        double[][] prices = {{10, 20}, // Warehouse 1 prices for Product A and B
                 {15, 25}  // Warehouse 2 prices for Product A and B
         };
 
@@ -276,19 +278,375 @@ public class OrToolsService {
         return order;
     }
 
-    public void solve2() {
+    public void solveWithMinOrderPrice4() {
         Loader.loadNativeLibraries();
-
-        // Input data
         int numWarehouses = 2;
         int numProducts = 2;
         String[] warehouses = {"Warehouse 1", "Warehouse 2"};
-        String[] products = {"Product A", "Product B"};
+        List<String> products = new ArrayList<>();
+        products.add("Product A");
+        products.add("Product B");
 
         // Storage capacity for each product in each warehouse
         int[][] storageCapacity = {
-                {70, 150}, // Warehouse 1 capacities for Product A and B
-                {1, 100}  // Warehouse 2 capacities for Product A and B
+                {10, 50}, // Warehouse 1 capacities for Product A and B
+                {30, 50}  // Warehouse 2 capacities for Product A and B
+        };
+
+        // Prices for products in each warehouse
+        double[][] prices = {
+                {10, 20}, // Warehouse 1 prices for Product A and B
+                {15, 25}  // Warehouse 2 prices for Product A and B
+        };
+
+        // Demand for each product
+        int[] demand = {80, 100};
+
+        // Minimum price required for each warehouse
+        double[] minPrice = {1000, 1500};
+
+        MPSolver solver = MPSolver.createSolver("CBC_MIXED_INTEGER_PROGRAMMING");
+        if (solver == null) {
+            System.out.println("Could not create solver CBC_MIXED_INTEGER_PROGRAMMING");
+            return;
+        }
+
+        // Check available products
+        for (int j = 0; j < numProducts; j++) {
+            boolean productAvailable = false;
+            for (int i = 0; i < numWarehouses; i++) {
+                if (storageCapacity[i][j] > 0) {
+                    productAvailable = true;
+                    break;
+                }
+            }
+            if (!productAvailable) {
+                demand[j] = 0; // Set demand to 0 for unavailable products
+            }
+        }
+
+        MPVariable[][] x = new MPVariable[numWarehouses][numProducts];
+        for (int i = 0; i < numWarehouses; i++) {
+            for (int j = 0; j < numProducts; j++) {
+                x[i][j] = solver.makeNumVar(0, storageCapacity[i][j], "x_" + i + "_" + j);
+            }
+        }
+
+        MPVariable[] unmetDemand = new MPVariable[numProducts];
+        for (int j = 0; j < numProducts; j++) {
+            unmetDemand[j] = solver.makeNumVar(0, demand[j], "unmetDemand_" + j);
+        }
+
+        MPObjective objective = solver.objective();
+        for (int i = 0; i < numWarehouses; i++) {
+            for (int j = 0; j < numProducts; j++) {
+                objective.setCoefficient(x[i][j], prices[i][j]);
+            }
+        }
+
+        double penaltyForUnmetDemand = 1000;
+        for (int j = 0; j < numProducts; j++) {
+            objective.setCoefficient(unmetDemand[j], penaltyForUnmetDemand);
+        }
+
+        objective.setMinimization();
+
+        for (int j = 0; j < numProducts; j++) {
+            MPConstraint demandConstraint = solver.makeConstraint(demand[j], demand[j], "demand_" + j);
+            for (int i = 0; i < numWarehouses; i++) {
+                demandConstraint.setCoefficient(x[i][j], 1);
+            }
+            demandConstraint.setCoefficient(unmetDemand[j], 1);
+        }
+
+        // Solve the problem initially
+        ResultStatus resultStatus = solver.solve();
+
+        // Check if any warehouse total order price is less than minimum required
+        boolean rerunRequired = false;
+        for (int i = 0; i < numWarehouses; i++) {
+            double totalPrice = 0;
+            for (int j = 0; j < numProducts; j++) {
+                totalPrice += x[i][j].solutionValue() * prices[i][j];
+            }
+            if (totalPrice < minPrice[i]) {
+                System.out.printf("%s does not meet the minimum order price. Excluding it.%n", warehouses[i]);
+                // Set storage capacity to zero to exclude the warehouse
+                for (int j = 0; j < numProducts; j++) {
+                    storageCapacity[i][j] = 0;
+                }
+                rerunRequired = true;
+            }
+        }
+
+        // Rerun solver if any warehouse was excluded
+        if (rerunRequired) {
+            System.out.println("Rerunning solver after excluding warehouses...");
+
+            // Create a new solver instance
+            solver = MPSolver.createSolver("CBC_MIXED_INTEGER_PROGRAMMING");
+
+            // Recreate decision variables with updated storage capacity
+            for (int i = 0; i < numWarehouses; i++) {
+                for (int j = 0; j < numProducts; j++) {
+                    x[i][j] = solver.makeNumVar(0, storageCapacity[i][j], "x_" + i + "_" + j);
+                }
+            }
+
+            for (int j = 0; j < numProducts; j++) {
+                unmetDemand[j] = solver.makeNumVar(0, demand[j], "unmetDemand_" + j);
+            }
+
+            objective = solver.objective();
+            for (int i = 0; i < numWarehouses; i++) {
+                for (int j = 0; j < numProducts; j++) {
+                    objective.setCoefficient(x[i][j], prices[i][j]);
+                }
+            }
+
+            for (int j = 0; j < numProducts; j++) {
+                objective.setCoefficient(unmetDemand[j], penaltyForUnmetDemand);
+            }
+
+            objective.setMinimization();
+
+            for (int j = 0; j < numProducts; j++) {
+                MPConstraint demandConstraint = solver.makeConstraint(demand[j], demand[j], "demand_" + j);
+                for (int i = 0; i < numWarehouses; i++) {
+                    demandConstraint.setCoefficient(x[i][j], 1);
+                }
+                demandConstraint.setCoefficient(unmetDemand[j], 1);
+            }
+
+            // Solve again after exclusion
+            resultStatus = solver.solve();
+        }
+
+        // Check and print the solution
+        if (resultStatus == ResultStatus.OPTIMAL) {
+            System.out.println("Optimal solution found:");
+            for (int i = 0; i < numWarehouses; i++) {
+                for (int j = 0; j < numProducts; j++) {
+                    if (x[i][j].solutionValue() > 0) {
+                        System.out.printf("%s from %s: %.0f units%n", products.get(j), warehouses[i], x[i][j].solutionValue());
+                    }
+                }
+            }
+            System.out.printf("Total cost: %.2f%n", solver.objective().value());
+        } else {
+            System.out.println("The problem does not have an optimal solution.");
+        }
+
+        System.out.println("Advanced usage:");
+        System.out.println("Problem solved in " + solver.wallTime() + " milliseconds");
+        System.out.println("Problem solved in " + solver.iterations() + " iterations");
+    }
+
+    public void solveWithMinOrderPrice() {
+        Loader.loadNativeLibraries();
+        int numWarehouses = 2;
+        int numProducts = 2;
+        String[] warehouses = {"Warehouse 1", "Warehouse 2"};
+        List<String> products = new ArrayList<>();
+        products.add("Product A");
+        products.add("Product B");
+
+
+
+        // check if the product does not exist at all warehouses and exclude it by setting the demand equal zero
+        // check if the product quantity for warehouses does not meet demand quantity then get all the quantity for all warehouses and minimize the order price by adding penalty for undemanding products
+        // check if the total order price for each warehouse less than the minimum order price for each warehouse I want to exclude the further one to match the constraint of the minimum order price and rerun the solver again
+        // Storage capacity for each product in each warehouse
+        int[][] storageCapacity = {
+                {10, 50}, // Warehouse 1 capacities for Product A and B
+                {30, 50}  // Warehouse 2 capacities for Product A and B
+        };
+
+        // Prices for products in each warehouse
+        double[][] prices = {
+                {10, 20}, // Warehouse 1 prices for Product A and B
+                {15, 25}  // Warehouse 2 prices for Product A and B
+        };
+
+        // Demand for each product
+        int[] demand = {80, 100};
+        // Minimum price required for each warehouse
+        double[] minPrice = {1000, 1500};
+//        int numWarehouses = 2;
+//        int numProducts = 1;
+//
+//        // Define data
+//        String[] warehouses = {"Warehouse 1", "Warehouse 2"};
+//        String[] products = {"Product A"};
+//
+//        // Storage capacity for each product in each warehouse
+//        int[][] storageCapacity = {{100}, {0}};
+//
+//        // Prices of products in each warehouse
+//        double[][] prices = {{10}, {5}};
+//
+//        // Minimum order price required for each warehouse
+//        double[] minPrice = {1000, 500};
+//
+//        // Quantity required for each product
+//        int[] demand = {100};
+
+        // Create Solver
+        MPSolver solver = MPSolver.createSolver("CBC_MIXED_INTEGER_PROGRAMMING");
+        if (solver == null) {
+            System.out.println("Could not create solver CBC_MIXED_INTEGER_PROGRAMMING");
+            return;
+        }
+
+
+        // Check available products
+        for (int j = 0; j < numProducts; j++) {
+            boolean productAvailable = false;
+            for (int i = 0; i < numWarehouses; i++) {
+                if (storageCapacity[i][j] > 0) {
+                    productAvailable = true;
+                    break;
+                }
+            }
+            if (!productAvailable) {
+                demand[j] = 0; // Set demand to 0 for unavailable products
+            }
+        }
+
+
+        // Decision variables
+        MPVariable[][] x = new MPVariable[numWarehouses][numProducts];
+        for (int i = 0; i < numWarehouses; i++) {
+            for (int j = 0; j < numProducts; j++) {
+                x[i][j] = solver.makeNumVar(0, storageCapacity[i][j], "x_" + i + "_" + j);
+            }
+        }
+
+        // Additional variables for unmet demand (slack variables)
+        MPVariable[] unmetDemand = new MPVariable[numProducts];
+        for (int j = 0; j < numProducts; j++) {
+            unmetDemand[j] = solver.makeNumVar(0, demand[j], "unmetDemand_" + j);
+        }
+
+
+        // Objective function: Minimize total cost
+        MPObjective objective = solver.objective();
+        for (int i = 0; i < numWarehouses; i++) {
+            for (int j = 0; j < numProducts; j++) {
+                objective.setCoefficient(x[i][j], prices[i][j]);
+            }
+        }
+
+
+        // Penalty for unmet demand (i.e., maximize quantity supplied)
+        // Use a large penalty to force the solver to fulfill as much demand as possible
+        // 1000 * unMetDemandP2 + 1000 * unMetDemandP1 is added to the objective to be minimized
+        double penaltyForUnmetDemand = 1000;  // Increase this penalty to ensure unmet demand is discouraged
+        for (int j = 0; j < numProducts; j++) {
+            objective.setCoefficient(unmetDemand[j], penaltyForUnmetDemand);  // Penalize unmet demand heavily
+        }
+
+        // Objective function: Minimize total cost
+        objective.setMinimization();
+
+//        // Demand constraints
+//        for (int j = 0; j < numProducts; j++) {
+//            MPConstraint demandConstraint = solver.makeConstraint(demand[j], demand[j], "demand_" + j);
+//            for (int i = 0; i < numWarehouses; i++) {
+//                demandConstraint.setCoefficient(x[i][j], 1);
+//            }
+//        }
+        // Demand constraints: total supplied + unmet demand = total demand
+        for (int j = 0; j < numProducts; j++) {
+            MPConstraint demandConstraint = solver.makeConstraint(demand[j], demand[j], "demand_" + j);
+            for (int i = 0; i < numWarehouses; i++) { // x11(50) + x12(50) = demand of p1
+                demandConstraint.setCoefficient(x[i][j], 1);  // Sum of all supplies should be part of the demand
+            }
+            // x11 + x12 + unmet of p1 = demand of p1
+            demandConstraint.setCoefficient(unmetDemand[j], 1);  // Add unmet demand as part of the equation
+        }
+//        // Minimum price constraints: ensure the total cost of products in each warehouse meets the minimum price
+//        for (int i = 0; i < numWarehouses; i++) {
+//            MPConstraint minPriceConstraint = solver.makeConstraint(minPrice[i], Double.POSITIVE_INFINITY, "minPrice_" + i);
+//            for (int j = 0; j < numProducts; j++) {
+//                minPriceConstraint.setCoefficient(x[i][j], prices[i][j]);
+//            }
+//        }
+
+//        // Capacity constraints
+//        for (int i = 0; i < numWarehouses; i++) {
+//            for (int j = 0; j < numProducts; j++) {
+//                MPConstraint capacityConstraint = solver.makeConstraint(0, storageCapacity[i][j], "capacity_" + i + "_" + j);
+//                capacityConstraint.setCoefficient(x[i][j], 1);
+//            }
+//        }
+
+//
+//        // Minimum order price constraints with release condition
+//        for (int i = 0; i < numWarehouses; i++) {
+//            // Create a variable to track if the minimum price condition is met
+//            MPVariable meetsMinPrice = solver.makeBoolVar("meetsMinPrice_" + i);
+//
+//            // Sum of units sourced multiplied by their price to ensure minimum price
+//            MPConstraint minPriceConstraint = solver.makeConstraint(0, Double.POSITIVE_INFINITY, "min_price_" + i);
+//            for (int j = 0; j < numProducts; j++) {
+//                minPriceConstraint.setCoefficient(x[i][j], prices[i][j]);
+//            }
+//            minPriceConstraint.setCoefficient(meetsMinPrice, -minPrice[i]); // If the total price is less than minPrice, this variable is false
+//
+//            // Allow sourcing from this warehouse only if minimum price is met
+//            for (int j = 0; j < numProducts; j++) {
+//                // Ensure unique constraint name by including both warehouse and product indices
+//                MPConstraint releaseMinPrice = solver.makeConstraint(0, Double.POSITIVE_INFINITY, "release_min_price_" + i + "_" + j);
+//                releaseMinPrice.setCoefficient(x[i][j], 1); // Allow sourcing from the warehouse itself
+//
+//                // Add conditions to allow sourcing from other warehouses if minimum price is not met
+//                for (int k = 0; k < numWarehouses; k++) {
+//                    if (k != i) {
+//                        releaseMinPrice.setCoefficient(x[k][j], 1); // Allow sourcing from other warehouses
+//                    }
+//                }
+//            }
+//        }
+
+
+        // Solve the problem
+        ResultStatus resultStatus = solver.solve();
+
+        // Check and print the solution
+        if (resultStatus == ResultStatus.OPTIMAL) {
+            double total = 0.0;
+            System.out.println("Optimal solution found:");
+            for (int i = 0; i < numWarehouses; i++) {
+                for (int j = 0; j < numProducts; j++) {
+                    if (x[i][j].solutionValue() > 0) {
+                        total+=  x[i][j].solutionValue() * prices[i][j];
+                        System.out.printf("%s from %s: %.0f units * price : %.0f =  %.0f %n  ", products.get(j), warehouses[i], x[i][j].solutionValue(),prices[i][j],total);
+                    }
+                }
+            }
+            System.out.printf("Total cost: %.2f%n", total);
+        } else {
+            System.out.println("The problem does not have an optimal solution.");
+        }
+
+        System.out.println("Advanced usage:");
+        System.out.println("Problem solved in " + solver.wallTime() + " milliseconds");
+        System.out.println("Problem solved in " + solver.iterations() + " iterations");
+    }
+    public void solveWithMinOrderPrice2() {
+        Loader.loadNativeLibraries();
+        int numWarehouses = 2;
+        int numProducts = 2;
+        String[] warehouses = {"Warehouse 1", "Warehouse 2"};
+        List<String> products = new ArrayList<>();
+        products.add("Product A");
+        products.add("Product B");
+
+        // Storage capacity for each product in each warehouse
+        int[][] storageCapacity = {
+                {0, 150}, // Warehouse 1 capacities for Product A and B
+                {0, 100}  // Warehouse 2 capacities for Product A and B
         };
 
         // Prices for products in each warehouse
@@ -301,12 +659,200 @@ public class OrToolsService {
         int[] demand = {80, 70};
         // Minimum price required for each warehouse
         double[] minPrice = {1000, 1500};
+//        int numWarehouses = 2;
+//        int numProducts = 1;
+//
+//        // Define data
+//        String[] warehouses = {"Warehouse 1", "Warehouse 2"};
+//        String[] products = {"Product A"};
+//
+//        // Storage capacity for each product in each warehouse
+//        int[][] storageCapacity = {{100}, {0}};
+//
+//        // Prices of products in each warehouse
+//        double[][] prices = {{10}, {5}};
+//
+//        // Minimum order price required for each warehouse
+//        double[] minPrice = {1000, 500};
+//
+//        // Quantity required for each product
+//        int[] demand = {100};
+
+        // Create Solver
+        MPSolver solver = MPSolver.createSolver("CBC_MIXED_INTEGER_PROGRAMMING");
+        if (solver == null) {
+            System.out.println("Could not create solver CBC_MIXED_INTEGER_PROGRAMMING");
+            return;
+        }
+
+        // Demand constraints
+        // Check available products
+        for (int j = 0; j < numProducts; j++) {
+            boolean productAvailable = false;
+            for (int i = 0; i < numWarehouses; i++) {
+                if (storageCapacity[i][j] > 0) {
+                    productAvailable = true;
+                    break;
+                }
+            }
+            if (!productAvailable) {
+                demand[j] = 0; // Set demand to 0 for unavailable products
+            }
+        }
+
+
+        // Decision variables
+        MPVariable[][] x = new MPVariable[numWarehouses][numProducts];
+        for (int i = 0; i < numWarehouses; i++) {
+            for (int j = 0; j < numProducts; j++) {
+                x[i][j] = solver.makeNumVar(0, storageCapacity[i][j], "x_" + i + "_" + j);
+            }
+        }
+
+        // Objective function: Minimize total cost
+        MPObjective objective = solver.objective();
+        for (int i = 0; i < numWarehouses; i++) {
+            for (int j = 0; j < numProducts; j++) {
+                objective.setCoefficient(x[i][j], prices[i][j]);
+            }
+        }
+        // Objective function: Minimize total cost
+        objective.setMinimization();
+
+        // Demand constraints
+        for (int j = 0; j < numProducts; j++) {
+            MPConstraint demandConstraint = solver.makeConstraint(demand[j], demand[j], "demand_" + j);
+            for (int i = 0; i < numWarehouses; i++) {
+                demandConstraint.setCoefficient(x[i][j], 1);
+            }
+        }
+
+        // Capacity constraints
+        for (int i = 0; i < numWarehouses; i++) {
+            for (int j = 0; j < numProducts; j++) {
+                MPConstraint capacityConstraint = solver.makeConstraint(0, storageCapacity[i][j], "capacity_" + i + "_" + j);
+                capacityConstraint.setCoefficient(x[i][j], 1);
+            }
+        }
+        // Minimum order price constraints with release condition
+        for (int i = 0; i < numWarehouses; i++) {
+            // Create a variable to track if the minimum price condition is met
+            MPVariable meetsMinPrice = solver.makeBoolVar("meetsMinPrice_" + i);
+
+            // Sum of units sourced multiplied by their price to ensure minimum price
+            MPConstraint minPriceConstraint = solver.makeConstraint(0, Double.POSITIVE_INFINITY, "min_price_" + i);
+            for (int j = 0; j < numProducts; j++) {
+                minPriceConstraint.setCoefficient(x[i][j], prices[i][j]);
+            }
+            minPriceConstraint.setCoefficient(meetsMinPrice, -minPrice[i]); // If the total price is less than minPrice, this variable is false
+
+            // Allow sourcing from this warehouse only if minimum price is met
+            for (int j = 0; j < numProducts; j++) {
+                // Ensure unique constraint name by including both warehouse and product indices
+                MPConstraint releaseMinPrice = solver.makeConstraint(0, Double.POSITIVE_INFINITY, "release_min_price_" + i + "_" + j);
+                releaseMinPrice.setCoefficient(x[i][j], 1); // Allow sourcing from the warehouse itself
+
+                // Add conditions to allow sourcing from other warehouses if minimum price is not met
+                for (int k = 0; k < numWarehouses; k++) {
+                    if (k != i) {
+                        releaseMinPrice.setCoefficient(x[k][j], 1); // Allow sourcing from other warehouses
+                    }
+                }
+            }
+        }
+        // Solve the problem
+        ResultStatus resultStatus = solver.solve();
+
+        // Check and print the solution
+        if (resultStatus == ResultStatus.OPTIMAL) {
+            System.out.println("Optimal solution found:");
+            for (int i = 0; i < numWarehouses; i++) {
+                for (int j = 0; j < numProducts; j++) {
+                    if (x[i][j].solutionValue() > 0) {
+                        System.out.printf("%s from %s: %.0f units%n", products.get(j), warehouses[i], x[i][j].solutionValue());
+                    }
+                }
+            }
+            System.out.printf("Total cost: %.2f%n", solver.objective().value());
+        } else if (resultStatus == ResultStatus.FEASIBLE) {
+            System.out.println("Feasible solution found, but it may not be optimal:");
+            for (int i = 0; i < numWarehouses; i++) {
+                for (int j = 0; j < numProducts; j++) {
+                    if (x[i][j].solutionValue() > 0) {
+                        System.out.printf("%s from %s: %.0f units%n", products.get(j), warehouses[i], x[i][j].solutionValue());
+                    }
+                }
+            }
+            System.out.printf("Total cost: %.2f%n", solver.objective().value());
+        } else if (resultStatus == ResultStatus.INFEASIBLE) {
+            System.out.println("No feasible solution exists. Consider relaxing some constraints.");
+        } else if (resultStatus == ResultStatus.UNBOUNDED) {
+            System.out.println("The problem is unbounded. Check if all constraints are correctly defined.");
+        } else if (resultStatus == ResultStatus.ABNORMAL) {
+            System.out.println("An abnormal condition occurred during solving. Check the problem setup or solver configuration.");
+        } else if (resultStatus == ResultStatus.NOT_SOLVED) {
+            System.out.println("The solver did not solve the problem. Try increasing the time limit or adjusting the problem complexity.");
+        } else {
+            System.out.println("Solver returned an unknown status.");
+        }
+        System.out.println("Advanced usage:");
+        System.out.println("Problem solved in " + solver.wallTime() + " milliseconds");
+        System.out.println("Problem solved in " + solver.iterations() + " iterations");
+    }
+
+    public void solve2() {
+        Loader.loadNativeLibraries();
+        // إعداد البيانات
+        int numWarehouses = 2;
+        int numProducts = 1;
+        // تعريف البيانات
+        String[] warehouses = {"Warehouse 1", "Warehouse 2"};
+        String[] products = {"Product A"};
+
+        // سعة التخزين لكل منتج في كل مخزن
+        int[][] storageCapacity = {{100}, // Warehouse 1 capacities for Product A and B
+                {200}  // Warehouse 2 capacities for Product A and B
+        };
+
+        // أسعار المنتجات في كل مخزن
+        double[][] prices = {{10}, // Warehouse 1 prices for Product A and B
+                {15}  // Warehouse 2 prices for Product A and B
+        };
+
+        // الحد الأدنى للسعر المطلوب في كل مخزن
+        double[] minPrice = {1000, 1500};
+
+        // الكميات المطلوبة من كل منتج
+        int[] demand = {100};
+
+        // Input data
+//        int numWarehouses = 2;
+//        int numProducts = 2;
+//        String[] warehouses = {"Warehouse 1", "Warehouse 2"};
+//        String[] products = {"Product A", "Product B"};
+//
+//        // Storage capacity for each product in each warehouse
+//        int[][] storageCapacity = {
+//                {0, 150}, // Warehouse 1 capacities for Product A and B
+//                {0, 100}  // Warehouse 2 capacities for Product A and B
+//        };
+//
+//        // Prices for products in each warehouse
+//        double[][] prices = {
+//                {10, 20}, // Warehouse 1 prices for Product A and B
+//                {15, 25}  // Warehouse 2 prices for Product A and B
+//        };
+//
+//        // Demand for each product
+//        int[] demand = {0, 70};
+//        // Minimum price required for each warehouse
+//        double[] minPrice = {1000, 1500};
 //        GLOP is a linear programming solver,
 //   it may not always handle constraints related to integer values (such as exact capacity or unit constraints)
 //   as well as a Mixed Integer Programming (MIP) solver like CBC.
 //      Switching to CBC can sometimes give you more flexibility in handling complex constraints
         // Create Solver (Switching to CBC solver)
-        MPSolver solver = MPSolver.createSolver("CBC_MIXED_INTEGER_PROGRAMMING");
+        MPSolver solver = MPSolver.createSolver("GLOP");
 //        MPSolver solver = MPSolver.createSolver("GLOP");
         if (solver == null) {
             System.out.println("Could not create solver CBC_MIXED_INTEGER_PROGRAMMING");
@@ -339,18 +885,16 @@ public class OrToolsService {
             }
         }
 
-//        // Capacity constraints: do not exceed warehouse capacity for each product
-//        for (int i = 0; i < numWarehouses; i++) {
-//            for (int j = 0; j < numProducts; j++) {
-//                MPConstraint capacityConstraint = solver.makeConstraint(0, storageCapacity[i][j], "capacity_" + i + "_" + j);
-//                capacityConstraint.setCoefficient(x[i][j], 1);
-//            }
-//        }
-
+        // Capacity constraints: do not exceed warehouse capacity for each product
+        for (int i = 0; i < numWarehouses; i++) {
+            for (int j = 0; j < numProducts; j++) {
+                MPConstraint capacityConstraint = solver.makeConstraint(0, storageCapacity[i][j], "capacity_" + i + "_" + j);
+                capacityConstraint.setCoefficient(x[i][j], 1);
+            }
+        }
+//
 
         // Minimum price constraints: ensure the total cost of products in each warehouse meets the minimum price
-        // x11*p11 + x12*p2 >= 1000
-        // P2 >= 1000
         for (int i = 0; i < numWarehouses; i++) {
             MPConstraint minPriceConstraint = solver.makeConstraint(minPrice[i], Double.POSITIVE_INFINITY, "minPrice_" + i);
             for (int j = 0; j < numProducts; j++) {
@@ -380,6 +924,200 @@ public class OrToolsService {
 
         System.out.println("Problem solved in " + solver.wallTime() + " milliseconds");
 
+        System.out.println("Problem solved in " + solver.iterations() + " iterations");
+    }
+    public void solve4() {
+        Loader.loadNativeLibraries();
+        // إعداد البيانات
+        int numWarehouses = 2;
+        int numProducts = 1;
+
+        // تعريف البيانات
+        String[] warehouses = {"Warehouse 1", "Warehouse 2"};
+        String[] products = {"Product A"};
+
+        // سعة التخزين لكل منتج في كل مخزن
+        int[][] storageCapacity = {{100}, // Warehouse 1 capacities for Product A
+                {200}  // Warehouse 2 capacities for Product A
+        };
+
+        // أسعار المنتجات في كل مخزن
+        double[][] prices = {{10}, // Warehouse 1 prices for Product A
+                {15}  // Warehouse 2 prices for Product A
+        };
+
+        // الحد الأدنى للسعر المطلوب في كل مخزن
+        double[] minPrice = {1000, 1500};
+
+        // الكميات المطلوبة من كل منتج
+        int[] demand = {100};
+
+        // Create Solver (Switching to CBC solver)
+        MPSolver solver = MPSolver.createSolver("CBC_MIXED_INTEGER_PROGRAMMING");
+        if (solver == null) {
+            System.out.println("Could not create solver CBC_MIXED_INTEGER_PROGRAMMING");
+            return;
+        }
+
+        // Decision variables: number of units sourced from each warehouse
+        MPVariable[][] x = new MPVariable[numWarehouses][numProducts];
+        for (int i = 0; i < numWarehouses; i++) {
+            for (int j = 0; j < numProducts; j++) {
+                x[i][j] = solver.makeNumVar(0, storageCapacity[i][j], "x_" + i + "_" + j);
+            }
+        }
+
+        // Objective function: minimize total cost
+        MPObjective objective = solver.objective();
+        for (int i = 0; i < numWarehouses; i++) {
+            for (int j = 0; j < numProducts; j++) {
+                objective.setCoefficient(x[i][j], prices[i][j]);
+            }
+        }
+        objective.setMinimization();
+
+        // Demand constraints: ensure full demand for each product is met
+        for (int j = 0; j < numProducts; j++) {
+            MPConstraint demandConstraint = solver.makeConstraint(demand[j], demand[j], "demand_" + j);
+            for (int i = 0; i < numWarehouses; i++) {
+                demandConstraint.setCoefficient(x[i][j], 1);
+            }
+        }
+
+        // Capacity constraints: do not exceed warehouse capacity for each product
+        for (int i = 0; i < numWarehouses; i++) {
+            for (int j = 0; j < numProducts; j++) {
+                MPConstraint capacityConstraint = solver.makeConstraint(0, storageCapacity[i][j], "capacity_" + i + "_" + j);
+                capacityConstraint.setCoefficient(x[i][j], 1);
+            }
+        }
+
+        // Minimum price constraints: ensure the total cost of products in each warehouse meets the minimum price
+        for (int i = 0; i < numWarehouses; i++) {
+            MPConstraint minPriceConstraint = solver.makeConstraint(minPrice[i], Double.POSITIVE_INFINITY, "minPrice_" + i);
+            for (int j = 0; j < numProducts; j++) {
+                minPriceConstraint.setCoefficient(x[i][j], prices[i][j]);
+            }
+        }
+
+        // Solve the problem
+        ResultStatus resultStatus = solver.solve();
+
+        // Check and print the solution
+        if (resultStatus == ResultStatus.OPTIMAL) {
+            System.out.println("Optimal solution found:");
+            for (int i = 0; i < numWarehouses; i++) {
+                for (int j = 0; j < numProducts; j++) {
+                    if (x[i][j].solutionValue() > 0) {
+                        System.out.printf("%s from %s: %.0f units%n", products[j], warehouses[i], x[i][j].solutionValue());
+                    }
+                }
+            }
+            System.out.printf("Total cost: %.2f%n", solver.objective().value());
+        } else {
+            System.out.println("The problem does not have an optimal solution.");
+        }
+
+        System.out.println("Advanced usage:");
+        System.out.println("Problem solved in " + solver.wallTime() + " milliseconds");
+        System.out.println("Problem solved in " + solver.iterations() + " iterations");
+    }
+    public void solve5() {
+        Loader.loadNativeLibraries();
+//        // إعداد البيانات
+        int numWarehouses = 2;
+        int numProducts = 1;
+
+// تعريف البيانات
+        String[] warehouses = {"Warehouse 1", "Warehouse 2"};
+        String[] products = {"Product A"};
+
+// سعة التخزين لكل منتج في كل مخزن
+        int[][] storageCapacity = {{100}, // Warehouse 1 capacities for Product A
+                {200}  // Warehouse 2 capacities for Product A
+        };
+
+// أسعار المنتجات في كل مخزن
+        double[][] prices = {{10}, // Warehouse 1 prices for Product A
+                {25}  // Warehouse 2 prices for Product A
+        };
+
+// الحد الأدنى للسعر المطلوب في كل مخزن
+        double[] minPrice = {1000, 1500};
+
+        // الكميات المطلوبة من كل منتج
+        int[] demand = {100};
+
+        // الحد الأدنى للطلب من كل مخزن
+        int[] minOrder = {100, 150}; // الحد الأدنى للطلب لكل مخزن
+        // Create Solver (Switching to CBC solver)
+        MPSolver solver = MPSolver.createSolver("CBC_MIXED_INTEGER_PROGRAMMING");
+        if (solver == null) {
+            System.out.println("Could not create solver CBC_MIXED_INTEGER_PROGRAMMING");
+            return;
+        }
+
+        // Decision variables: number of units sourced from each warehouse
+        MPVariable[][] x = new MPVariable[numWarehouses][numProducts];
+        for (int i = 0; i < numWarehouses; i++) {
+            for (int j = 0; j < numProducts; j++) {
+                x[i][j] = solver.makeNumVar(0, storageCapacity[i][j], "x_" + i + "_" + j);
+            }
+        }
+
+        // Objective function: minimize total cost
+        MPObjective objective = solver.objective();
+        for (int i = 0; i < numWarehouses; i++) {
+            for (int j = 0; j < numProducts; j++) {
+                objective.setCoefficient(x[i][j], prices[i][j]);
+            }
+        }
+        objective.setMinimization();
+
+        // Demand constraints: ensure full demand for each product is met
+        for (int j = 0; j < numProducts; j++) {
+            MPConstraint demandConstraint = solver.makeConstraint(demand[j], demand[j], "demand_" + j);
+            for (int i = 0; i < numWarehouses; i++) {
+                demandConstraint.setCoefficient(x[i][j], 1);
+            }
+        }
+
+        // Capacity constraints: do not exceed warehouse capacity for each product
+        for (int i = 0; i < numWarehouses; i++) {
+            for (int j = 0; j < numProducts; j++) {
+                MPConstraint capacityConstraint = solver.makeConstraint(0, storageCapacity[i][j], "capacity_" + i + "_" + j);
+                capacityConstraint.setCoefficient(x[i][j], 1);
+            }
+        }
+
+// قيود الحد الأدنى للسعر
+        for (int j = 0; j < numProducts; j++) {
+            for (int i = 0; i < numWarehouses; i++) {
+                MPConstraint minPriceConstraint = solver.makeConstraint(0, Double.POSITIVE_INFINITY, "min_price_" + i + "_" + j);
+                minPriceConstraint.setCoefficient(x[i][j], prices[i][j]);
+                minPriceConstraint.setBounds(minPrice[i], Double.POSITIVE_INFINITY);
+            }
+        }
+        // Solve the problem
+        ResultStatus resultStatus = solver.solve();
+
+        // Check and print the solution
+        if (resultStatus == ResultStatus.OPTIMAL) {
+            System.out.println("Optimal solution found:");
+            for (int i = 0; i < numWarehouses; i++) {
+                for (int j = 0; j < numProducts; j++) {
+                    if (x[i][j].solutionValue() > 0) {
+                        System.out.printf("%s from %s: %.0f units%n", products[j], warehouses[i], x[i][j].solutionValue());
+                    }
+                }
+            }
+            System.out.printf("Total cost: %.2f%n", solver.objective().value());
+        } else {
+            System.out.println("The problem does not have an optimal solution.");
+        }
+
+        System.out.println("Advanced usage:");
+        System.out.println("Problem solved in " + solver.wallTime() + " milliseconds");
         System.out.println("Problem solved in " + solver.iterations() + " iterations");
     }
 
@@ -496,6 +1234,7 @@ public class OrToolsService {
         System.out.println("Problem solved in " + solver.iterations() + " iterations");
     }
 
+
     public void solveWithMinOrderPostProcessing() {
         Loader.loadNativeLibraries();
 
@@ -514,7 +1253,7 @@ public class OrToolsService {
         List<CbcProduct> demand = orderList.stream()
         		.map(product -> new CbcProduct(product.getId(), product.getQuantity(), 0))
         		.collect(Collectors.toList());
-        
+
         List<CbcWarehouse> warehouses = new ArrayList<CbcWarehouse>();
         for (Warehouse1 warehouse : warehouseList) {
         	List<CbcProduct> products = new ArrayList<CbcProduct>();
@@ -526,7 +1265,7 @@ public class OrToolsService {
         }
 
         cbcSolver.solve(new CbcInput(demand, warehouses));
-        
+
         System.out.println("---------------------------------");
 
         // Create the solver
