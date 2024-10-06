@@ -253,6 +253,11 @@ public class OptimizerService1 {
                     reassignProductsWithNextCheapest(solution, assignment, notSatisfiedWarehousesIds, warehousesOrderPrice);
         }
 
+        if(notSatisfiedWarehousesIds.size() == 1){
+            Integer notSatisfiedWarehouse = notSatisfiedWarehousesIds.stream().toList().get(0);
+            notReachableProducts.addAll(assignment.get(notSatisfiedWarehouse));
+        }
+
         printSolution(solution, notReachableProducts, notSatisfiedWarehousesIds, assignment);
 
         Instant end = Instant.now();
