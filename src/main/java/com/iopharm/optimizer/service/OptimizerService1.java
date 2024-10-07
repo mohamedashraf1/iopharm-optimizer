@@ -374,10 +374,10 @@ public class OptimizerService1 {
                 = assignment.get(notSatisfiedWarehouses.get(notSatisfiedWarehouses.size()-1).getId());
 
         Set<Product> notReachableProducts = new HashSet<>();
+        Warehouse1 leastSatisfiedWarehouse = notSatisfiedWarehouses.get(notSatisfiedWarehouses.size() - 1);
 
-
-        // removed the last Warehouse
-        notSatisfiedWarehousesIds.remove(notSatisfiedWarehouses.get(notSatisfiedWarehouses.size()-1).getId());
+        // Remove the least satisfied warehouse from future consideration
+        notSatisfiedWarehousesIds.remove(leastSatisfiedWarehouse.getId());
         notSatisfiedWarehouses.remove(notSatisfiedWarehouses.size()-1);
 
         for(Product product : leastSatisfiedWarehouseProducts){
@@ -415,13 +415,17 @@ public class OptimizerService1 {
                     oldProduct.setQuantity(oldProduct.getQuantity() + availableProduct.getQuantity());
 
                 assignment.put(secondCheapestWarehouse.getId(), secondCheapestWarehouseProducts);
-            }
 
+                // Update the warehouse's order price after reassignment
+                double updatedOrderPrice = warehousesOrderPrice.get(secondCheapestWarehouse.getId())
+                        + availableProduct.getQuantity() * secondCheapestWarehouse.getProductPrices().get(availableProduct.getId());
+                warehousesOrderPrice.put(secondCheapestWarehouse.getId(), updatedOrderPrice);
+            }
         }
 
         // check if any warehouse now is satisfied
         for(Warehouse1 warehouse : notSatisfiedWarehouses){
-            double orderPrice = getWarehouseOrderPrice(assignment, warehouse);
+            double orderPrice = warehousesOrderPrice.get(warehouse.getId());
             if(orderPrice >= warehouse.getMinOrderPrice()){
                 solution.put(warehouse.getId(), assignment.get(warehouse.getId()));
                 notSatisfiedWarehousesIds.remove(warehouse.getId());
