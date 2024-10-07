@@ -181,7 +181,7 @@ public class CbcSolver {
 				for (int i = 0; i < numProducts; i++) {
 					int quantity = (int) quantities[i][j].solutionValue();
 					if (quantity > 0) {
-						System.out.println("- product " + (i + 1) + "(" + demand.get(i).getName() + "): " + quantity + " units ("
+						System.out.println("- product " + (i + 1) + "(" + warehouseList.get(j).getProducts().get(i).getName() + "): " + quantity + " units ("
 								+ warehouseList.get(j).getProducts().get(i).getPrice() + ")");
 						totalCost += quantity * warehouseList.get(j).getProducts().get(i).getPrice();
 					}

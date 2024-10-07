@@ -135,6 +135,14 @@ public class OptimizerController {
         orTools.solveWithMinOrderPostProcessing();
     }
 
+    @GetMapping("/solve/0")
+    void testAll0() {
+    	List<Warehouse1> warehouses = orTools.getWarehouses();
+    	List<Product> demand = orTools.getOrder();
+    	
+    	orTools.solveFinal(warehouses, demand);
+    }
+
     @GetMapping("/solve/1")
     void testAll() {
     	List<Warehouse1> warehouses = testService.getWarehouses1();
@@ -144,33 +152,33 @@ public class OptimizerController {
     }
 
 
-    @GetMapping("/solve/3")
+    @GetMapping("/solve/2")
     void testAll3() {
+        List<Warehouse1> warehouses = testService.getWarehouses2();
+        List<Product> demand = testService.getOrder3();
+
+        orTools.solveFinal(warehouses, demand);
+    }
+
+    @GetMapping("/solve/3")
+    void testAll5() {
         List<Warehouse1> warehouses = testService.getWarehouses3();
         List<Product> demand = testService.getOrder3();
 
         orTools.solveFinal(warehouses, demand);
     }
 
-    @GetMapping("/solve/5")
-    void testAll5() {
-        List<Warehouse1> warehouses = testService.getWarehouses5();
-        List<Product> demand = testService.getOrder5();
-
-        orTools.solveFinal(warehouses, demand);
-    }
-
-    @GetMapping("/solve/2")
-    void testAll2() {
-        List<Warehouse1> warehouses = testService.getWarehouses2();
-        List<Product> demand = testService.getOrder2();
-
-        orTools.solveFinal(warehouses, demand);
-    }
     @GetMapping("/solve/4")
-    void testAll4() {
+    void testAll2() {
         List<Warehouse1> warehouses = testService.getWarehouses4();
         List<Product> demand = testService.getOrder4();
+
+        orTools.solveFinal(warehouses, demand);
+    }
+    @GetMapping("/solve/5")
+    void testAll4() {
+        List<Warehouse1> warehouses = testService.getWarehouses5();
+        List<Product> demand = testService.getOrder5();
 
         orTools.solveFinal(warehouses, demand);
     }
@@ -178,6 +186,13 @@ public class OptimizerController {
     void testAll6() {
         List<Warehouse1> warehouses = testService.getWarehouses6();
         List<Product> demand = testService.getOrder6();
+
+        orTools.solveFinal(warehouses, demand);
+    }
+    @GetMapping("/solve/7")
+    void testAll7() {
+        List<Warehouse1> warehouses = testService.getWarehouses7();
+        List<Product> demand = testService.getOrder7();
 
         orTools.solveFinal(warehouses, demand);
     }

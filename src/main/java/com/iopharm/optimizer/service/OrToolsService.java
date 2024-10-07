@@ -182,16 +182,17 @@ public class OrToolsService {
         Warehouse1 temp1 = new Warehouse1();
         temp1.setId(1);
         temp1.setMinOrderPrice(1000);
+        temp1.setName("1");
         Map<Integer, Double> productPrices = new HashMap<>();
-        productPrices.put(1, 10.0);
-        productPrices.put(2, 20.0);
-        productPrices.put(3, 20.0);
-        productPrices.put(4, 20.0);
+        productPrices.put(1, 150.0);
+        productPrices.put(2, 200.0);
+        productPrices.put(3, 200.0);
+        productPrices.put(4, 200.0);
 
         temp1.setProductPrices(productPrices);
 
         Map<Integer, Integer> productQuantities = new HashMap<>();
-        productQuantities.put(1, 2);
+        productQuantities.put(1, 5);
         productQuantities.put(2, 5);
         productQuantities.put(3, 5);
         productQuantities.put(4, 5);
@@ -202,12 +203,13 @@ public class OrToolsService {
 
         Warehouse1 temp2 = new Warehouse1();
         temp2.setId(2);
-        temp2.setMinOrderPrice(10);
+        temp2.setMinOrderPrice(200);
+        temp2.setName("2");
         Map<Integer, Double> productPrices2 = new HashMap<>();
-        productPrices2.put(1, 20.0);
-        productPrices2.put(2, 10.0);
-        productPrices2.put(3, 20.0);
-        productPrices2.put(4, 20.0);
+        productPrices2.put(1, 200.0);
+        productPrices2.put(2, 100.0);
+        productPrices2.put(3, 200.0);
+        productPrices2.put(4, 200.0);
 
         temp2.setProductPrices(productPrices2);
 
@@ -225,17 +227,18 @@ public class OrToolsService {
 
         Warehouse1 temp3 = new Warehouse1();
         temp3.setId(3);
-        temp3.setMinOrderPrice(60);
+        temp3.setMinOrderPrice(300);
+        temp3.setName("3");
         Map<Integer, Double> productPrices3 = new HashMap<>();
-        productPrices3.put(1, 20.0);
-        productPrices3.put(2, 20.0);
-        productPrices3.put(3, 10.0);
-        productPrices3.put(4, 20.0);
+        productPrices3.put(1, 200.0);
+        productPrices3.put(2, 200.0);
+        productPrices3.put(3, 100.0);
+        productPrices3.put(4, 200.0);
 
         temp3.setProductPrices(productPrices3);
 
         Map<Integer, Integer> productQuantities3 = new HashMap<>();
-        productQuantities3.put(1, 1);
+        productQuantities3.put(1, 5);
         productQuantities3.put(2, 5);
         productQuantities3.put(3, 5);
         productQuantities3.put(4, 5);
@@ -247,12 +250,13 @@ public class OrToolsService {
 
         Warehouse1 temp4 = new Warehouse1();
         temp4.setId(4);
-        temp4.setMinOrderPrice(10);
+        temp4.setMinOrderPrice(400);
+        temp4.setName("4");
         Map<Integer, Double> productPrices4 = new HashMap<>();
-        productPrices4.put(1, 20.0);
-        productPrices4.put(2, 20.0);
-        productPrices4.put(3, 20.0);
-        productPrices4.put(4, 10.0);
+        productPrices4.put(1, 200.0);
+        productPrices4.put(2, 200.0);
+        productPrices4.put(3, 200.0);
+        productPrices4.put(4, 100.0);
 
         temp4.setProductPrices(productPrices4);
 
@@ -271,10 +275,10 @@ public class OrToolsService {
 
     public List<Product> getOrder(){
         List<Product> order = new ArrayList<>();
-        order.add(new Product(1, 5));
-        order.add(new Product(2, 5));
-        order.add(new Product(3, 5));
-        order.add(new Product(4, 5));
+        order.add(new Product(1, 5, "1"));
+        order.add(new Product(2, 5, "2"));
+        order.add(new Product(3, 5, "3"));
+        order.add(new Product(4, 5, "4"));
         return order;
     }
 
@@ -1427,7 +1431,7 @@ public class OrToolsService {
         	List<CbcProduct> products = new ArrayList<CbcProduct>();
         	for (int i : warehouse.getProductPrices().keySet()) {
         		products.add(
-        				new CbcProduct(i, warehouse.getProductQuantities().get(i), warehouse.getProductPrices().get(i), ""));
+        				new CbcProduct(i, warehouse.getProductQuantities().get(i), warehouse.getProductPrices().get(i), orderList.get(i-1).getName()));
         	}
         	warehouses.add(new CbcWarehouse(warehouse.getId(), warehouse.getName(), warehouse.getMinOrderPrice(), products));
         }

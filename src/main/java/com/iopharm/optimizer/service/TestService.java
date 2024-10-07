@@ -2,31 +2,13 @@ package com.iopharm.optimizer.service;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import  com.google.ortools.Loader;
-import com.google.ortools.linearsolver.MPConstraint;
-import com.google.ortools.linearsolver.MPObjective;
-import com.google.ortools.linearsolver.MPSolver;
-import com.google.ortools.linearsolver.MPSolver.ResultStatus;
-import com.google.ortools.linearsolver.MPVariable;
-import com.iopharm.optimizer.dtos.ProductDTO;
-import com.iopharm.optimizer.dtos.WarehouseDTO;
-import com.iopharm.optimizer.dtos.WarehouseProductDTO;
-import com.iopharm.optimizer.model.CbcInput;
-import com.iopharm.optimizer.model.CbcProduct;
-import com.iopharm.optimizer.model.CbcWarehouse;
 import com.iopharm.optimizer.model.Product;
 import com.iopharm.optimizer.model.Warehouse1;
-import com.iopharm.optimizer.model.WarehouseProduct;
 
 @Service
 public class TestService {
@@ -532,5 +514,67 @@ public class TestService {
         return order;
     }
 
+    public List<Warehouse1> getWarehouses7(){
+        List<Warehouse1> warehouses = new ArrayList<>();
+        Map<Integer, Double> productPrices = new HashMap<>();
+        productPrices.put(1, 16.2);
+        productPrices.put(2, 63.0);
+        productPrices.put(3, 19.75);
+        productPrices.put(4, 10.8);
+        productPrices.put(5, 20.1);
+
+        Map<Integer, Integer> productQuantities = new HashMap<>();
+        productQuantities.put(1, 0);
+        productQuantities.put(2, 100);
+        productQuantities.put(3, 100);
+        productQuantities.put(4, 100);
+        productQuantities.put(5, 100);
+
+        warehouses.add(new Warehouse1(1, "Fardos", 1100, productPrices, productQuantities));
+
+        Map<Integer, Double> productPrices2 = new HashMap<>();
+        productPrices2.put(1, 15.8);
+        productPrices2.put(2, 64.8);
+        productPrices2.put(3, 21.25);
+        productPrices2.put(4, 11.55);
+        productPrices2.put(5, 30.0);
+
+        Map<Integer, Integer> productQuantities2 = new HashMap<>();
+        productQuantities2.put(1, 100);
+        productQuantities2.put(2, 100);
+        productQuantities2.put(3, 100);
+        productQuantities2.put(4, 0);
+        productQuantities2.put(5, 0);
+
+        warehouses.add(new Warehouse1(2, "Aqsa", 800, productPrices2, productQuantities2));
+
+        Map<Integer, Double> productPrices3 = new HashMap<>();
+        productPrices3.put(1, 19.0);
+        productPrices3.put(2, 66.6);
+        productPrices3.put(3, 21.0);
+        productPrices3.put(4, 10.5);
+        productPrices3.put(5, 19.5);
+
+        Map<Integer, Integer> productQuantities3 = new HashMap<>();
+        productQuantities3.put(1, 100);
+        productQuantities3.put(2, 0);
+        productQuantities3.put(3, 100);
+        productQuantities3.put(4, 100);
+        productQuantities3.put(5, 100);
+
+        warehouses.add(new Warehouse1(3, "Oscar", 500, productPrices3, productQuantities3));
+
+        return warehouses;
+    }
+
+    public List<Product> getOrder7(){
+        List<Product> order = new ArrayList<>();
+        order.add(new Product(1, 35, "Panadol"));
+        order.add(new Product(2, 15, "Augmentin"));
+        order.add(new Product(3, 15, "Brufen"));
+        order.add(new Product(4, 22, "Antinal"));
+        order.add(new Product(5, 22, "Concor"));
+        return order;
+    }
 }
 
